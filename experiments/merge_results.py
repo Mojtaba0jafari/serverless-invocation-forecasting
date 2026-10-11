@@ -1,4 +1,4 @@
-"""Merge baseline, ETS, and Chronos tables and pick the class-aware rule."""
+"""Merge baseline, ETS, Chronos, and LSTM tables and pick the class-aware rule."""
 
 from __future__ import annotations
 
@@ -15,12 +15,18 @@ POINT_MODELS = [
     "trailing_percentile",
     "ets",
     "chronos",
+    "lstm",
 ]
 
 
 def load_parts() -> pd.DataFrame:
     frames = []
-    for name in ("baseline_per_function.csv", "ets_per_function.csv", "chronos_per_function.csv"):
+    for name in (
+        "baseline_per_function.csv",
+        "ets_per_function.csv",
+        "chronos_per_function.csv",
+        "lstm_per_function.csv",
+    ):
         path = OUT_DIR / name
         if not path.exists():
             print(f"missing {path}")
