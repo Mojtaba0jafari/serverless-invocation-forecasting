@@ -16,7 +16,6 @@
 *.bcf
 *.run.xml
 *.xdv
-main.pdf
 
 # Python
 __pycache__/
