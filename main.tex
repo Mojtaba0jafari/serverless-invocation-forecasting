@@ -117,11 +117,12 @@ The selection rule uses only point forecasts. On days 11--12, each class takes t
 
 The study has four limits. The trace is from 2019 and contains 80 sampled functions, not a live deployment. The capacity of 10 invocations per container-minute is an assumption, not a measured service rate. $U$ and $O$ are computed from the trace, not from cold starts on a platform such as OpenWhisk. Medians are the right summary here, and they are not a substitute for a cost model that weights a few very large functions the way a provider bill would.
 
-\begin{table*}[t]
+\begin{table}[t]
 \caption{Median sMAPE, missed invocations, and extra container-minutes on days 11--14.}
 \label{tab:days1114}
 \centering
-\footnotesize
+\scriptsize
+\setlength{\tabcolsep}{2pt}
 \begin{tabular}{|l|l|r|r|r|r|r|}
 \hline
 \textbf{Model} & \textbf{Metric} & \textbf{Sparse} & \textbf{Daily} & \textbf{Bursty} & \textbf{Other} & \textbf{All} \\
@@ -151,25 +152,28 @@ Chronos & sMAPE (\%) & 178.6 & 125.0 & 114.2 & 12.0 & 119.4 \\
  & Extra & 5126.0 & 3549.0 & 2760.5 & 694.0 & 3281.0 \\
 \hline
 \end{tabular}
-\end{table*}
+\end{table}
 
-\begin{figure*}[t]
-\centerline{\includegraphics[width=\textwidth]{figures/forecast_examples}}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/forecast_examples}
 \caption{Day 11 for one daily function and one sparse function. Seasonal naive follows the daily shape. The trailing percentile stays above that shape and reacts at the sparse spikes.}
 \label{fig:examples}
-\end{figure*}
+\end{figure}
 
-\begin{figure*}[t]
-\centerline{\includegraphics[width=0.86\textwidth]{figures/provisioning_tradeoff}}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/provisioning_tradeoff}
 \caption{Median missed invocations against median extra container-minutes on days 11--14. Both axes are logarithmic. Orange squares are Chronos forecasts at the 80th and 90th percentiles. Closer to the lower left is better.}
 \label{fig:tradeoff}
-\end{figure*}
+\end{figure}
 
-\begin{table*}[t]
-\caption{Held-out medians on days 13--14. The rule uses seasonal Holt--Winters for sparse functions and the trailing percentile otherwise.}
+\begin{table}[t]
+\caption{Held-out medians on days 13--14. The rule uses seasonal Holt--Winters for sparse functions and the trailing percentile otherwise. The other rows use one forecast for every class.}
 \label{tab:heldout}
 \centering
-\footnotesize
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
 \begin{tabular}{|l|l|r|r|r|}
 \hline
 \textbf{Policy} & \textbf{Class} & \textbf{sMAPE (\%)} & \textbf{Missed} & \textbf{Extra} \\
@@ -180,20 +184,20 @@ Selection rule & Sparse & 111.6 & 0.0 & 1598.5 \\
  & Other & 10.8 & 56.0 & 31.5 \\
  & All & 49.9 & 16.6 & 1117.0 \\
 \hline
-Always seasonal naive & Sparse & 0.1 & 0.0 & 0.5 \\
+Seasonal naive & Sparse & 0.1 & 0.0 & 0.5 \\
  & Daily & 4.0 & 41.5 & 21.0 \\
  & Bursty & 14.2 & 361.5 & 258.0 \\
  & Other & 9.3 & 133.0 & 39.0 \\
  & All & 2.7 & 40.0 & 15.0 \\
 \hline
-Always trailing percentile & Sparse & 0.1 & 2.0 & 0.0 \\
+Trailing percentile & Sparse & 0.1 & 2.0 & 0.0 \\
  & Daily & 134.5 & 12.6 & 2278.5 \\
  & Bursty & 52.5 & 122.8 & 722.5 \\
  & Other & 10.8 & 56.0 & 31.5 \\
  & All & 16.2 & 21.0 & 120.5 \\
 \hline
 \end{tabular}
-\end{table*}
+\end{table}
 
 \section{Conclusion}
 \label{sec:conclusion}
