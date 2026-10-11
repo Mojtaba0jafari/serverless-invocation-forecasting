@@ -1,0 +1,42 @@
+{
+  "context_minutes": 360,
+  "horizon_minutes": 60,
+  "stride_minutes": 60,
+  "origins": 96,
+  "capacity_invocations_per_container_minute": 10,
+  "seasonal_acf_min": 0.3,
+  "trailing_minutes": 10,
+  "trailing_quantile": 0.95,
+  "windows": [
+    "days_11_14",
+    "days_11_12",
+    "days_13_14"
+  ],
+  "seasonal_variant_counts": [
+    {
+      "class": "bursty",
+      "variant": "previous_hour",
+      "functions": 20
+    },
+    {
+      "class": "daily",
+      "variant": "previous_day",
+      "functions": 20
+    },
+    {
+      "class": "other",
+      "variant": "previous_hour",
+      "functions": 20
+    },
+    {
+      "class": "sparse",
+      "variant": "previous_day",
+      "functions": 5
+    },
+    {
+      "class": "sparse",
+      "variant": "previous_hour",
+      "functions": 15
+    }
+  ]
+}
