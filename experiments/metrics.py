@@ -34,10 +34,16 @@ def self_check() -> None:
         raise SystemExit("sMAPE of a zero minute should be 0")
 
 
-def score_arrays(y: np.ndarray, yhat: np.ndarray) -> dict[str, np.ndarray]:
-    """Score arrays shaped (function, origin, minute)."""
+def score_arrays(y: np.ndarray, yhat: np.ndarray, capacity: float = CAPACITY) -> dict[str, np.ndarray]:
+    """Score arrays shaped (function, origin, minute).
+
+    Forecasts are clipped at zero before the container count, so a negative
+    prediction prepares no containers.
+    """
     if y.shape != yhat.shape:
         raise ValueError(f"Shape mismatch: {y.shape} vs {yhat.shape}")
+    if capacity <= 0:
+        raise ValueError("Capacity must be positive")
     yhat = np.maximum(yhat, 0)
     error = np.abs(y - yhat)
     denom = np.abs(y) + np.abs(yhat)
@@ -55,11 +61,11 @@ def score_arrays(y: np.ndarray, yhat: np.ndarray) -> dict[str, np.ndarray]:
             where=positive_count > 0,
         ),
         "short_container_minutes": np.maximum(
-            np.ceil(y / CAPACITY) - np.ceil(yhat / CAPACITY),
+            np.ceil(y / capacity) - np.ceil(yhat / capacity),
             0,
         ).sum(axis=(1, 2)),
         "over_container_minutes": np.maximum(
-            np.ceil(yhat / CAPACITY) - np.ceil(y / CAPACITY),
+            np.ceil(yhat / capacity) - np.ceil(y / capacity),
             0,
         ).sum(axis=(1, 2)),
     }

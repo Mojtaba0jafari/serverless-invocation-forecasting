@@ -65,7 +65,7 @@ your.email@aut.ac.ir}
 \maketitle
 
 \begin{abstract}
-Serverless platforms keep warm containers ready for a changing arrival rate. Too few containers cause cold starts, and too many sit idle. This paper compares six forecasters of per-minute function invocations on a public Azure Functions trace: three simple baselines, seasonal Holt--Winters, a pretrained time-series model, and a small LSTM. Functions are grouped into sparse, daily, bursty, and other workloads. Each forecast covers the next 60 minutes, and the fitted models see the previous day. Error is reported beside a provisioning score that counts short and extra container-minutes, assuming one warm container serves 10 invocations a minute. On a typical function, copying the previous day has the lowest error. Forecasts that sit above the load leave almost no container short and hold many idle containers. A rule that picks the lowest-shortfall model in each class selects Chronos for sparse and daily functions. On later days that rule has a median shortfall of zero and about 1,700 extra container-minutes, while a high percentile of recent load has a median shortfall of half a container-minute and about 120 extra container-minutes.
+Serverless platforms keep warm containers ready for a changing arrival rate. Too few containers cause cold starts, and too many sit idle. This paper compares six forecasters of per-minute function invocations on a public Azure Functions trace: three simple baselines, seasonal Holt--Winters, a pretrained time-series model, and a small LSTM. Functions are grouped into sparse, daily, bursty, and other workloads. Each forecast covers the next 60 minutes, and the fitted models see the previous day. Error is reported beside a provisioning score that counts short and extra container-minutes, assuming one warm container serves 10 invocations a minute. On a typical function, the seasonal naive forecast has the lowest error. Forecasts that sit above the load leave almost no container short and hold many idle containers. A rule that picks the lowest-shortfall model in each class selects Chronos for sparse and daily functions. On later days that rule has a median shortfall of zero and about 1,700 extra container-minutes, while a high percentile of recent load has a median shortfall of half a container-minute and about 120 extra container-minutes. The same order holds when a container serves 1, 5, or 20 invocations a minute.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -78,7 +78,7 @@ A serverless platform receives a changing number of function invocations and mus
 
 Forecasting is already part of production resource management. The public Azure Functions study uses a time-series forecast inside a larger keep-alive policy \cite{shahrad2020serverless}. What is still easy to miss is that functions are not one workload. A timer with a daily shape, a rarely called HTTP function, and a bursty queue consumer can prefer different forecasters. Average error over the whole trace hides that split.
 
-This paper is a comparative study, not a new scheduler. On 80 functions from the 2019 Azure Functions invocation trace, it asks which forecaster an operator should use for which class of function, and what that choice costs in missed invocations versus idle containers. The fitted models all see the previous day, so a daily pattern is inside their window. The contributions are a class-aware comparison, a provisioning score beside forecast error, and a selection rule fit on two days and checked on the next two.
+This paper is a comparative study, not a new scheduler. On 80 functions from the 2019 Azure Functions invocation trace, it asks which forecaster an operator should use for which class of function, and what that choice costs in short containers versus idle containers. The fitted models all see the previous day, so a daily pattern is inside their window. The contributions are a class-aware comparison, a provisioning score beside forecast error, and a selection rule fit on two days and checked on the next two.
 
 \section{Related Work}
 \label{sec:related}
@@ -86,7 +86,7 @@ Shahrad et al.\ characterize the Azure Functions workload and show that most fun
 
 Chronos trains a probabilistic forecaster on a large collection of time series and can forecast a new series without retraining \cite{ansari2024chronos}. Chronos-Bolt is a faster variant that emits quantile forecasts for the whole horizon in one pass. We use the small Chronos-Bolt checkpoint with no fine-tuning, and we score its median and two upper quantiles. Upper quantiles are a direct way to buy fewer shortfalls by preparing more containers.
 
-Learned forecasters, including recurrent networks, have been trained to pre-warm serverless containers. The question here is narrower. Under one public trace, one horizon, and one capacity assumption, with a full day of history available to every fitted model, do seasonal exponential smoothing, Chronos, or an LSTM beat simple rules that an operator can run without training?
+The learned comparisons are seasonal exponential smoothing, Chronos, and one shared LSTM. Under one public trace, one horizon, and a full day of history, do those models beat simple rules that an operator can run without training?
 
 \section{Setup}
 \label{sec:setup}
@@ -105,17 +105,24 @@ S = \sum_{t} \max\!\left(0,\, \left\lceil y_t / 10 \right\rceil - \left\lceil \h
 O = \sum_{t} \max\!\left(0,\, \left\lceil \hat{y}_t / 10 \right\rceil - \left\lceil y_t / 10 \right\rceil\right).
 \label{eq:over}
 \end{equation}
-$S$ counts short container-minutes. $O$ counts extra container-minutes. A forecast error that stays inside the same container adds nothing to either sum: eight invocations against a forecast of five still needs one container. Any forecast in $(0, 10]$ prepares one container, so a small positive value on an idle minute costs a full container-minute and scores a large sMAPE. Forecast error is the symmetric mean absolute percentage error (sMAPE). A minute where both the actual value and the forecast are zero contributes nothing. A few heavy functions dominate class sums, so every table reports the median across functions.
+$S$ counts short container-minutes. $O$ counts extra container-minutes. Forecasts are clipped at zero before either sum, so a negative prediction prepares no containers. A forecast error that stays inside the same container adds nothing to either sum: eight invocations against a forecast of five still needs one container. Any forecast in $(0, 10]$ prepares one container, so a small positive value on an idle minute costs a full container-minute. Forecast error is the symmetric mean absolute percentage error. For one function it is the mean over test minutes of
+\begin{equation}
+\mathrm{sMAPE}_t = 100 \cdot \frac{2|y_t - \hat{y}_t|}{|y_t| + |\hat{y}_t|},
+\label{eq:smape}
+\end{equation}
+and a minute where both values are zero contributes nothing. Tables report the median of that per-function mean. A few heavy functions dominate class sums, which is why the median is the summary.
 
 \section{Evaluation}
 \label{sec:evaluation}
 Table~\ref{tab:days1114} summarizes the four test days. Seasonal naive has the lowest overall median sMAPE, 7.1\%. The gap is largest on daily functions, where its median sMAPE is 3.9\%, against 40.0\% for the LSTM, 60.6\% for seasonal Holt--Winters, and 125.0\% for Chronos. Those three models all observed the previous day. Fig.~\ref{fig:examples} shows the pattern the copy uses. On the daily example, yesterday's shape follows the load. The trailing percentile sits in steps above it. On the sparse example, arrivals are isolated spikes. The LSTM has the lowest sparse sMAPE, 0.7\%, and no idle containers, because it predicts zeros. On daily functions its median container shortfall is 1{,}088, against 45 for seasonal naive.
 
-Container shortfall reorders the same forecasts. Chronos has the smallest overall median, 1.0 short container-minute, because the forecast sits above the load, and it pays 3{,}281 extra container-minutes. The trailing percentile is next among the point forecasts that an operator might actually run, at 18.5 short container-minutes and 729 extra. Seasonal naive is short 75 container-minutes and wastes 80.5. The LSTM, which predicts low, is short 814. On daily functions both Chronos and the trailing percentile have a median shortfall of zero; Chronos wastes 3{,}549 container-minutes there and the percentile wastes 4{,}386.5. Raising Chronos from the median to the 90th percentile brings the overall median shortfall from 1.0 to 0 and raises extra container-minutes from 3{,}281 to 4{,}770. Fig.~\ref{fig:tradeoff} shows that pair of axes. The upper quantiles lie on the zero-shortfall line.
+Container shortfall reorders the same forecasts. Chronos has the smallest overall median, 1.0 short container-minute, because the forecast sits above the load, and it pays 3{,}281 extra container-minutes. The trailing percentile is next among the point forecasts that an operator might actually run, at 18.5 short container-minutes and 729 extra. Seasonal naive is short 75 container-minutes and wastes 80.5. The LSTM, which predicts low, is short 814. On daily functions both Chronos and the trailing percentile have a median shortfall of zero; Chronos wastes 3{,}549 container-minutes there and the percentile wastes 4{,}386.5. Raising Chronos from the median to the 90th percentile brings the overall median shortfall from 1.0 to 0 and raises extra container-minutes from 3{,}281 to 4{,}770. A median of zero is not coverage of every function. Chronos is short on 52.5\% of functions, the trailing percentile on 66.2\%, seasonal naive on 87.5\%, and the LSTM on all 80. The 90th percentile is still short on 30.0\%. Fig.~\ref{fig:tradeoff} shows the median trade-off. The upper quantiles lie on the zero-shortfall line.
 
-The selection rule uses only point forecasts. On days 11--12, each class takes the forecast with the lowest median shortfall, then the lower waste, then the lower sMAPE. Sparse functions select Chronos: its median shortfall is 0, against 8.5 for seasonal naive. Daily functions select Chronos as well. The trailing percentile also has a daily shortfall of 0 on those days, and Chronos wastes less, 1{,}672 container-minutes against 2{,}113.5. Bursty and other functions select the trailing percentile. Table~\ref{tab:heldout} applies that frozen rule to days 13--14. Across all functions the rule's median shortfall is 0 and its median waste is 1{,}713.5 container-minutes. Always using Chronos matches the zero shortfall and wastes 1{,}920. Always using the trailing percentile has a median shortfall of 0.5 and wastes 120.5. Always using seasonal naive has a median shortfall of 12 and wastes 15. On the held-out sparse functions, seasonal naive also has a shortfall of 0, with 0.5 extra container-minutes, while the rule's Chronos choice wastes 2{,}703.5. The shortfall rule therefore spends idle containers to buy a gap that the later days do not repeat.
+The selection rule uses only point forecasts. On days 11--12, each class takes the forecast with the lowest median shortfall, then the lower waste, then the lower sMAPE. Sparse functions select Chronos: its median shortfall is 0, against 8.5 for seasonal naive. Daily functions select Chronos as well. The trailing percentile also has a daily shortfall of 0 on those days, and Chronos wastes less, 1{,}672 container-minutes against 2{,}113.5. Bursty and other functions select the trailing percentile. Table~\ref{tab:heldout} applies that frozen rule to days 13--14. Across all functions the rule's median shortfall is 0 and its median waste is 1{,}713.5 container-minutes. Always using Chronos matches the zero shortfall and wastes 1{,}920. Always using the trailing percentile has a median shortfall of 0.5 and wastes 120.5. Always using seasonal naive has a median shortfall of 12 and wastes 15. On the held-out sparse functions, seasonal naive also has a shortfall of 0, with 0.5 extra container-minutes, while the rule's Chronos choice wastes 2{,}703.5. This rule is a shortfall-first heuristic, not a cost-minimizing policy. It spends idle containers to buy a gap that the later days do not repeat.
 
-The study has four limits. The trace is from 2019 and contains 80 sampled functions, not a live deployment. The capacity of 10 invocations per container-minute is an assumption, not a measured service rate. $S$ and $O$ are computed from the trace, not from cold starts on a platform such as OpenWhisk. Medians are the right summary here, and they are not a substitute for a cost model that weights a few very large functions the way a provider bill would.
+Table~\ref{tab:capacity} repeats $S$ and $O$ at capacities of 1, 5, 10, and 20 invocations per container-minute. The order is the same at each value. Chronos has the lowest median shortfall and the highest waste. The trailing percentile stays between Chronos and seasonal naive. The LSTM has the largest shortfall. At a capacity of 1 the shortfalls grow, because a single invocation can require its own container: Chronos is short 35.0 container-minutes and seasonal naive is short 206.0. From 5 through 20 the medians barely move.
+
+The study has five limits. The trace is from 2019 and contains 80 sampled functions, not a live deployment. Eligibility required at least one invocation on days 11--14, so a function that goes silent in the test window never enters the sample. The counts are per minute, not arrival times, so $S$ and $O$ are capacity gaps rather than measured cold starts on a platform such as OpenWhisk. Medians hide the heavy functions, which is why the share of functions with any shortfall is reported beside them. The selection rule uses only two days.
 
 \begin{table}[t]
 \caption{Median sMAPE, short container-minutes, and extra container-minutes on days 11--14.}
@@ -205,9 +212,40 @@ Chronos & Sparse & 187.7 & 0.0 & 2703.5 \\
 \end{tabular}
 \end{table}
 
+\begin{table}[t]
+\caption{Median short and extra container-minutes on days 11--14 when one container serves $C$ invocations a minute.}
+\label{tab:capacity}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{|l|l|r|r|r|r|}
+\hline
+\textbf{Model} & \textbf{Metric} & \textbf{1} & \textbf{5} & \textbf{10} & \textbf{20} \\
+\hline
+Seasonal naive & Short & 206.0 & 75.0 & 75.0 & 75.0 \\
+ & Extra & 233.0 & 80.5 & 80.5 & 80.5 \\
+\hline
+Last value & Short & 916.0 & 432.0 & 410.0 & 389.5 \\
+ & Extra & 205.0 & 63.5 & 63.5 & 63.5 \\
+\hline
+Trailing percentile & Short & 52.0 & 19.0 & 18.5 & 16.5 \\
+ & Extra & 3205.5 & 919.5 & 729.0 & 699.0 \\
+\hline
+ETS & Short & 46.5 & 15.0 & 15.0 & 15.0 \\
+ & Extra & 3692.0 & 2582.5 & 2101.5 & 1959.5 \\
+\hline
+LSTM & Short & 1151.5 & 927.5 & 814.0 & 785.0 \\
+ & Extra & 595.5 & 46.0 & 46.0 & 46.0 \\
+\hline
+Chronos & Short & 35.0 & 1.5 & 1.0 & 1.0 \\
+ & Extra & 4367.5 & 3398.5 & 3281.0 & 3237.0 \\
+\hline
+\end{tabular}
+\end{table}
+
 \section{Conclusion}
 \label{sec:conclusion}
-On this trace, copying the previous day is the accurate forecast, including for functions whose shape repeats every day. Seasonal Holt--Winters, Chronos-Bolt, and a small LSTM all receive that same day and remain well above the copy on error. Measured in containers, the high forecasts are the ones with almost no shortfall, and they pay for it with idle containers. A shortfall-only rule selects Chronos for sparse and daily functions. On held-out days its median shortfall is zero and its median waste is about 1,700 container-minutes, while the trailing percentile is short by half a container-minute and wastes about 120. A next measurement is to replace the capacity assumption with cold starts recorded on a real platform.
+On this trace, the seasonal naive forecast is the accurate one. It repeats the previous day when the training day-lag correlation exceeds 0.30, and otherwise repeats the previous hour. That rule is especially accurate for functions whose shape repeats every day. Seasonal Holt--Winters, Chronos-Bolt, and a small LSTM all receive that same day and remain well above the copy on error. Measured in containers, the high forecasts are the ones with almost no shortfall, and they pay for it with idle containers. A shortfall-only rule selects Chronos for sparse and daily functions. On held-out days its median shortfall is zero and its median waste is about 1,700 container-minutes, while the trailing percentile is short by half a container-minute and wastes about 120. A next measurement is to replace the capacity assumption with cold starts recorded on a real platform.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
