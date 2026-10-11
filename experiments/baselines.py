@@ -1,8 +1,10 @@
 """Rolling-origin forecasts for the three cheap baselines.
 
-Context is the previous 360 minutes. The horizon is the next 60 minutes.
-A new forecast starts every 60 minutes across days 11-14, so each test minute
-is scored once. Days 1-10 are history only.
+The horizon is the next 60 minutes. A new forecast starts every 60 minutes
+across days 11-14, so each test minute is scored once. Days 1-10 are history
+only. These three forecasts do not read the full 1,440-minute context used by
+ETS, the LSTM, and Chronos: seasonal naive reads yesterday or the previous
+hour, last-value reads one minute, and the trailing percentile reads ten.
 
 Seasonal naive repeats the same hour yesterday when the training day-lag
 autocorrelation is above 0.30. Otherwise it repeats the previous 60 minutes.
@@ -26,7 +28,7 @@ FUNCTIONS_PATH = ROOT / "data" / "functions.csv"
 OUT_DIR = ROOT / "results"
 
 MINUTES_PER_DAY = 1440
-CONTEXT = 360
+CONTEXT = 1440
 HORIZON = 60
 STRIDE = 60
 TEST_START = 10 * MINUTES_PER_DAY

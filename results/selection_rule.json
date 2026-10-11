@@ -22,9 +22,9 @@
   },
   {
     "class":"sparse",
-    "chosen_model":"seasonal_naive",
-    "under_median_days_11_12":9.0,
-    "over_median_days_11_12":8.5,
-    "smape_median_days_11_12":1.1805555556
+    "chosen_model":"ets",
+    "under_median_days_11_12":8.8068836673,
+    "over_median_days_11_12":1627.0,
+    "smape_median_days_11_12":111.847041623
   }
 ]

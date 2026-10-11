@@ -9,8 +9,8 @@ always_trailing_percentile,daily,134.5,12.6,2278.5
 always_trailing_percentile,bursty,52.5,122.8,722.5
 always_trailing_percentile,other,10.8,56.0,31.5
 always_trailing_percentile,all,16.2,21.0,120.5
-selection_rule,sparse,0.1,0.0,0.5
+selection_rule,sparse,111.6,0.0,1598.5
 selection_rule,daily,134.5,12.6,2278.5
 selection_rule,bursty,52.5,122.8,722.5
 selection_rule,other,10.8,56.0,31.5
-selection_rule,all,12.4,16.6,113.5
+selection_rule,all,49.9,16.6,1117.0

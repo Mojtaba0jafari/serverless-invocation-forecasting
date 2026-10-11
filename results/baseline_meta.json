@@ -1,5 +1,5 @@
 {
-  "context_minutes": 360,
+  "context_minutes": 1440,
   "horizon_minutes": 60,
   "stride_minutes": 60,
   "origins": 96,

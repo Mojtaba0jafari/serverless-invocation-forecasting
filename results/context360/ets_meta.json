@@ -1,0 +1,7 @@
+{
+  "model": "ets",
+  "family": "damped additive Holt / ETS(A,Ad,N)",
+  "context_minutes": 360,
+  "horizon_minutes": 60,
+  "note": "No seasonal component; compare with seasonal_naive for day-lag patterns."
+}

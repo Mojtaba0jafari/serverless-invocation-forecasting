@@ -1,0 +1,12 @@
+{
+  "model_id": "amazon/chronos-bolt-small",
+  "device": "cpu",
+  "context_minutes": 360,
+  "horizon_minutes": 60,
+  "quantiles": [
+    0.5,
+    0.8,
+    0.9
+  ],
+  "point_forecast": "median (q50)"
+}

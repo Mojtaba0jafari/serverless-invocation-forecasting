@@ -13,7 +13,10 @@ FUNCTIONS_PATH = ROOT / "data" / "functions.csv"
 OUT_DIR = ROOT / "results"
 
 MINUTES_PER_DAY = 1440
-CONTEXT = 360
+# One full day. Seasonal naive already reads this lag. Last-value and the
+# trailing percentile only use the last 1 and 10 minutes, so this length does
+# not change them. ETS, the LSTM, and Chronos all receive this window.
+CONTEXT = 1440
 HORIZON = 60
 STRIDE = 60
 TEST_START = 10 * MINUTES_PER_DAY

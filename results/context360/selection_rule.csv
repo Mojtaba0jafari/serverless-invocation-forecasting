@@ -1,0 +1,5 @@
+class,chosen_model,under_median_days_11_12,over_median_days_11_12,smape_median_days_11_12
+bursty,trailing_percentile,438.22500000000014,1316.5,99.86496829966129
+daily,trailing_percentile,11.625000000000004,2113.5,134.31712962962962
+other,trailing_percentile,54.575000000000045,63.5,10.686039698103063
+sparse,seasonal_naive,9.0,8.5,1.1805555555555556

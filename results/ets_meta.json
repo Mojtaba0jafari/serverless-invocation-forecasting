@@ -1,7 +1,504 @@
 {
   "model": "ets",
-  "family": "damped additive Holt / ETS(A,Ad,N)",
-  "context_minutes": 360,
+  "family": "additive Holt-Winters, daily season",
+  "period_minutes": 1440,
   "horizon_minutes": 60,
-  "note": "No seasonal component; compare with seasonal_naive for day-lag patterns."
+  "weights_fit_on": "days 1-10, one-step squared error",
+  "alpha_grid": [
+    0.2,
+    0.4,
+    0.7
+  ],
+  "beta_grid": [
+    0.0,
+    0.05,
+    0.2
+  ],
+  "gamma_grid": [
+    0.05,
+    0.2,
+    0.5
+  ],
+  "weights": [
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.4,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.4,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.4,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.4,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.4,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.4,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.4,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.4,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.7,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.5,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.05,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    },
+    {
+      "alpha": 0.2,
+      "beta": 0.0,
+      "gamma": 0.2,
+      "flat": false
+    }
+  ]
 }

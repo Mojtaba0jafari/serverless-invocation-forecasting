@@ -1,25 +1,25 @@
-"""ETS forecasts on the same rolling origins as the baselines.
+"""Seasonal Holt-Winters forecasts on the same rolling origins.
 
-Model: damped additive Holt (ETS with trend, no seasonal component), fitted
-on the previous 360 minutes at each origin. Seasonality is left to the
-seasonal-naive baseline and to Chronos; this model captures local level and
-trend under the same context length used by the other methods. Failed fits
-fall back to the last observed minute.
+The model is additive Holt-Winters with a daily season (period 1,440).
+Smoothing weights are chosen on days 1-10 only, one triple per function, by
+minimizing one-step error on a small grid. The selected weights then filter
+the series forward. A forecast at an origin uses only the state built from
+minutes before that origin.
+
+A pure daily cycle is the check that this is not the old local Holt model:
+the forecast has to follow the cycle instead of a flat level.
 """
 
 from __future__ import annotations
 
 import json
 import time
-import warnings
-from pathlib import Path
 
 import numpy as np
-from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 from common import (
-    CONTEXT,
     HORIZON,
+    MINUTES_PER_DAY,
     OUT_DIR,
     check_coverage,
     gather,
@@ -30,68 +30,135 @@ from common import (
 from metrics import class_table, per_function_table, self_check
 
 MODEL_NAME = "ets"
+PERIOD = MINUTES_PER_DAY
+ALPHAS = (0.2, 0.4, 0.7)
+BETAS = (0.0, 0.05, 0.2)
+GAMMAS = (0.05, 0.2, 0.5)
 
 
-def fit_one(history: np.ndarray) -> np.ndarray:
-    history = np.asarray(history, dtype=np.float64)
-    fallback = float(max(history[-1], 0.0))
-    if len(history) < 10 or not np.isfinite(history).all():
-        return np.full(HORIZON, fallback, dtype=np.float64)
-    if np.nanmax(history) == np.nanmin(history):
-        return np.full(HORIZON, fallback, dtype=np.float64)
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            fitted = ExponentialSmoothing(
-                history,
-                trend="add",
-                damped_trend=True,
-                seasonal=None,
-                initialization_method="estimated",
-            ).fit(optimized=True, remove_bias=False)
-            pred = np.asarray(fitted.forecast(HORIZON), dtype=np.float64)
-            if not np.isfinite(pred).all():
-                return np.full(HORIZON, fallback, dtype=np.float64)
-            return np.maximum(pred, 0.0)
-    except Exception:
-        return np.full(HORIZON, fallback, dtype=np.float64)
+def initialize(history: np.ndarray) -> tuple[float, float, np.ndarray]:
+    first = history[:PERIOD]
+    second = history[PERIOD : 2 * PERIOD]
+    level = float(first.mean())
+    trend = float((second.mean() - level) / PERIOD)
+    season = first - level
+    season = season - season.mean()
+    return level, trend, season
 
 
-def forecast_all(series: np.ndarray, starts: np.ndarray) -> np.ndarray:
+def one_step_sse(
+    history: np.ndarray,
+    alpha: float,
+    beta: float,
+    gamma: float,
+    fit_end: int,
+) -> float:
+    level, trend, season = initialize(history)
+    error = 0.0
+    count = 0
+    for t in range(fit_end):
+        phase = t % PERIOD
+        prediction = level + trend + season[phase]
+        residual = float(history[t] - prediction)
+        if t >= 2 * PERIOD:
+            error += residual * residual
+            count += 1
+        new_level = alpha * (history[t] - season[phase]) + (1.0 - alpha) * (level + trend)
+        trend = beta * (new_level - level) + (1.0 - beta) * trend
+        season[phase] = gamma * (history[t] - new_level) + (1.0 - gamma) * season[phase]
+        level = new_level
+    return error / max(count, 1)
+
+
+def select_weights(history: np.ndarray, fit_end: int) -> tuple[float, float, float]:
+    best = (ALPHAS[0], BETAS[0], GAMMAS[0])
+    best_error = float("inf")
+    for alpha in ALPHAS:
+        for beta in BETAS:
+            for gamma in GAMMAS:
+                error = one_step_sse(history, alpha, beta, gamma, fit_end)
+                if error < best_error:
+                    best_error = error
+                    best = (alpha, beta, gamma)
+    return best
+
+
+def forecast_function(history: np.ndarray, starts: np.ndarray, weights: tuple[float, float, float]) -> np.ndarray:
+    alpha, beta, gamma = weights
+    level, trend, season = initialize(history)
+    out = np.empty((len(starts), HORIZON), dtype=np.float64)
+    start_list = [int(value) for value in starts]
+    next_origin = 0
+    for t in range(start_list[-1] + 1):
+        while next_origin < len(start_list) and t == start_list[next_origin]:
+            origin = start_list[next_origin]
+            horizon = np.empty(HORIZON, dtype=np.float64)
+            for step in range(1, HORIZON + 1):
+                phase = (origin + step - 1) % PERIOD
+                horizon[step - 1] = level + step * trend + season[phase]
+            out[next_origin] = np.maximum(horizon, 0.0)
+            next_origin += 1
+        phase = t % PERIOD
+        new_level = alpha * (history[t] - season[phase]) + (1.0 - alpha) * (level + trend)
+        trend = beta * (new_level - level) + (1.0 - beta) * trend
+        season[phase] = gamma * (history[t] - new_level) + (1.0 - gamma) * season[phase]
+        level = new_level
+    if next_origin != len(start_list):
+        raise SystemExit("Seasonal ETS missed an origin")
+    return out
+
+
+def synthetic_check() -> None:
+    """A daily spike train must be forecast from yesterday, not from a flat level."""
+    minutes = 14 * PERIOD
+    series = np.zeros(minutes, dtype=np.float64)
+    series[np.arange(minutes) % PERIOD == 100] = 50.0
+    starts = np.array([10 * PERIOD + 60])
+    weights = select_weights(series[: 10 * PERIOD], 10 * PERIOD)
+    forecast = forecast_function(series, starts, weights)[0]
+    # The horizon covers phases 60..119, and the spike sits at phase 100.
+    if forecast[40] < 10:
+        raise SystemExit(f"Seasonal ETS missed the daily spike: {forecast[40]:.3f}")
+    if forecast[0] > 5:
+        raise SystemExit(f"Seasonal ETS invented load off the spike: {forecast[0]:.3f}")
+
+
+def forecast_all(series: np.ndarray, starts: np.ndarray) -> tuple[np.ndarray, list[dict]]:
+    fit_end = 10 * PERIOD
     out = np.empty((len(series), len(starts), HORIZON), dtype=np.float64)
-    total = len(series) * len(starts)
-    done = 0
+    chosen = []
     started = time.perf_counter()
     for i in range(len(series)):
-        for j, start in enumerate(starts):
-            begin = int(start) - CONTEXT
-            out[i, j] = fit_one(series[i, begin:int(start)])
-            done += 1
-            if done % 400 == 0 or done == total:
-                rate = done / max(time.perf_counter() - started, 1e-6)
-                eta = (total - done) / max(rate, 1e-6)
-                print(
-                    f"ETS {done}/{total} ({100 * done / total:.1f}%) "
-                    f"{rate:.1f} fits/s eta {eta / 60:.1f} min",
-                    flush=True,
-                )
-    return out
+        history = series[i].astype(np.float64)
+        if np.nanmax(history[:fit_end]) == np.nanmin(history[:fit_end]):
+            level = float(max(history[int(starts[0]) - 1], 0.0))
+            out[i] = level
+            chosen.append({"alpha": None, "beta": None, "gamma": None, "flat": True})
+        else:
+            weights = select_weights(history, fit_end)
+            out[i] = forecast_function(history, starts, weights)
+            chosen.append(
+                {"alpha": weights[0], "beta": weights[1], "gamma": weights[2], "flat": False}
+            )
+        if (i + 1) % 10 == 0 or i + 1 == len(series):
+            rate = (i + 1) / max(time.perf_counter() - started, 1e-6)
+            print(f"Seasonal ETS {i + 1}/{len(series)} ({rate:.2f} functions/s)", flush=True)
+    return out, chosen
 
 
 def main() -> None:
     self_check()
+    synthetic_check()
     series, meta = load_series()
     starts = origins()
     y = gather(series, starts, HORIZON).astype(np.float64)
     check_coverage(y, meta)
     print(
-        f"Fitting damped Holt on {CONTEXT}-minute contexts: "
-        f"{len(series)} functions x {len(starts)} origins",
+        f"Seasonal Holt-Winters, period {PERIOD}, {len(series)} functions x {len(starts)} origins",
         flush=True,
     )
-    yhat = forecast_all(series, starts)
-    forecasts = {MODEL_NAME: yhat}
-    per_function = per_function_table(y, forecasts, meta, origin_slices(starts))
+    yhat, weights = forecast_all(series, starts)
+    per_function = per_function_table(y, {MODEL_NAME: yhat}, meta, origin_slices(starts))
     summary = class_table(per_function)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     per_function.to_csv(OUT_DIR / "ets_per_function.csv", index=False)
@@ -108,10 +175,14 @@ def main() -> None:
         json.dumps(
             {
                 "model": MODEL_NAME,
-                "family": "damped additive Holt / ETS(A,Ad,N)",
-                "context_minutes": CONTEXT,
+                "family": "additive Holt-Winters, daily season",
+                "period_minutes": PERIOD,
                 "horizon_minutes": HORIZON,
-                "note": "No seasonal component; compare with seasonal_naive for day-lag patterns.",
+                "weights_fit_on": "days 1-10, one-step squared error",
+                "alpha_grid": list(ALPHAS),
+                "beta_grid": list(BETAS),
+                "gamma_grid": list(GAMMAS),
+                "weights": weights,
             },
             indent=2,
         ),

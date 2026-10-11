@@ -1,9 +1,9 @@
 """One shared LSTM forecaster on the same rolling origins as the other models.
 
 The network is trained only on days 1-8 and early-stopped on days 9-10.
-Days 11-14 are used only for the reported forecasts. Each window is scaled by
-the mean of its own 360-minute context, then the 60-minute prediction is
-scaled back. Seed is 42.
+Days 11-14 are used only for the reported forecasts. Each window is the
+previous day (1,440 minutes), scaled by the mean of that context. The
+60-minute prediction is scaled back. Seed is 42.
 """
 
 from __future__ import annotations

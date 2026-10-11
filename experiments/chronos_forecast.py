@@ -1,8 +1,8 @@
 """Zero-shot Chronos-Bolt forecasts on the same rolling origins.
 
 Uses amazon/chronos-bolt-small. The point forecast is the median. Quantile
-forecasts at 0.8 and 0.9 are kept for the provisioning trade-off. Context and
-horizon match the baselines: 360 and 60 minutes.
+forecasts at 0.8 and 0.9 are kept for the provisioning trade-off. The context
+is the previous day (1,440 minutes) and the horizon is 60 minutes.
 """
 
 from __future__ import annotations

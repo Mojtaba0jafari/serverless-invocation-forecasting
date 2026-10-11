@@ -152,16 +152,17 @@ def plot_tradeoff() -> None:
     fig, axis = plt.subplots(figsize=(7.05, 2.55))
     offsets = {
         "seasonal_naive": (6, -4),
-        "last_value": (-6, 8),
+        "last_value": (8, -9),
         "trailing_percentile": (6, 6),
-        "ets": (-6, 8),
-        "lstm": (6, 2),
-        "chronos": (8, -11),
-        "chronos_q80": (8, -8),
-        "chronos_q90": (6, -12),
+        "ets": (6, 4),
+        "lstm": (-8, 8),
+        "chronos": (-4, 8),
+        "chronos_q80": (8, 4),
+        "chronos_q90": (6, -10),
     }
     aligns = {
-        "ets": "right",
+        "lstm": "right",
+        "chronos": "right",
     }
     for model in models:
         row = part.loc[model]
