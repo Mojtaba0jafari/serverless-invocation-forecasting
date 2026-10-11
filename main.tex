@@ -1,0 +1,138 @@
+% IKT 2026 English paper.
+% Source: IEEE conference template dated 6/27/2024 (IEEEtran.cls in this folder).
+% Paper size is A4, matching IKT_Template_(English).doc.
+% If IEEE PDF eXpress later asks for US Letter, delete the a4paper option.
+%
+% Recent IKT English limits were 5 pages, or up to 7 pages with an extra-page
+% fee, including figures, tables, and references. Confirm the 2026 limit.
+% Do not change margins, column widths, fonts, or line spacing.
+% Do not use symbols, special characters, footnotes, or math in the title
+% or the abstract. Subtitles are dropped by IEEE Xplore; do not add one.
+%
+% Build from this folder:
+%   pdflatex main
+%   bibtex main
+%   pdflatex main
+%   pdflatex main
+
+\documentclass[conference,a4paper]{IEEEtran}
+
+% Uncomment the next line only if you add a \thanks funding footnote.
+% \IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+
+% The stock IEEEtran conference class leaves the running header empty.
+% IKT's Word template adds this line to the first page only, centered,
+% in 10 pt Times, and puts the IEEE copyright placeholder in the first-page
+% footer. Later pages have neither. Camera-ready submission replaces the
+% footer with the copyright line IEEE assigns.
+\makeatletter
+\def\ps@IEEEtitlepagestyle{%
+  \def\@oddhead{\hfil\normalfont\normalsize
+    2026 17th International Conference on Information and Knowledge Technology (IKT)\hfil}%
+  \let\@evenhead\@empty
+  \def\@oddfoot{\normalfont\normalsize
+    xxxx-..-\textellipsis.-\textellipsis.-x/xx/\$xx.00~\copyright2026IEEE\hfil}%
+  \let\@evenfoot\@empty}
+\makeatother
+
+\begin{document}
+
+\title{A Proactive Container-based Auto-scaling Approach for a Hierarchical Orchestration Framework for Edge Computing}
+
+% Funding footnote, if any. Delete it when there is no sponsor.
+% \thanks{Identify the funding agency here.}
+
+\author{\IEEEauthorblockN{Ehsan Moradi}
+\IEEEauthorblockA{\textit{Department of Computer Engineering} \\
+\textit{Amirkabir University of Technology}\\
+Tehran, Iran \\
+your.email@aut.ac.ir}
+% \and
+% \IEEEauthorblockN{Seyyed Ahmad Javadi}
+% \IEEEauthorblockA{\textit{Department of Computer Engineering} \\
+% \textit{Amirkabir University of Technology}\\
+% Tehran, Iran \\
+% email address or ORCID}
+}
+
+\maketitle
+
+\begin{abstract}
+Replace this paragraph with the abstract. State the problem, the method, and the result in one paragraph.
+\end{abstract}
+
+\begin{IEEEkeywords}
+edge computing, container orchestration, auto-scaling, hierarchical resource management
+\end{IEEEkeywords}
+
+\section{Introduction}
+\label{sec:introduction}
+Replace this section. Open with the problem, then the limit of current edge orchestration, then what this paper contributes.
+
+\section{Related Work}
+\label{sec:related}
+Replace this section. Cite prior work by number only, as in \cite{bartolomeo2023oakestra}.
+Give every author unless a reference has six or more.
+The bibliography is \texttt{references.bib} and uses the same keys as the thesis.
+
+\section{Proposed Approach}
+\label{sec:approach}
+Replace this section with the system model and the scaling method.
+
+% Number equations consecutively. Cite them as \eqref{eq:example},
+% not as ``Eq. (1)'', except at the start of a sentence.
+\begin{equation}
+a + b = \gamma
+\label{eq:example}
+\end{equation}
+
+% \begin{algorithmic}
+% \STATE example step
+% \end{algorithmic}
+
+\section{Evaluation}
+\label{sec:evaluation}
+Replace this section with the setup, the baselines, and the results.
+Place figures and tables at the top or bottom of a column, after they are cited.
+A wide figure or table may use the \texttt{figure*} or \texttt{table*} environment.
+
+\begin{table}[t]
+\caption{Replace this caption.}
+\label{tab:example}
+\centering
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Method} & \textbf{Metric} \\
+\hline
+Baseline & -- \\
+\hline
+This paper & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+% Put image files in the figures folder.
+% \begin{figure}[t]
+% \centerline{\includegraphics[width=\columnwidth]{figures/example}}
+% \caption{Replace this caption.}
+% \label{fig:example}
+% \end{figure}
+
+\section{Conclusion}
+\label{sec:conclusion}
+Replace this section with what the paper showed and what remains open.
+
+\section*{Acknowledgment}
+Replace or delete this section. Sponsor acknowledgments belong in the unnumbered footnote on the first page, not here.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

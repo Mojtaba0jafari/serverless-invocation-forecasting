@@ -1,0 +1,31 @@
+# LaTeX build output
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+*.xdv
+main.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Downloaded trace and the full 68k-function statistics.
+# The 80-function subset (functions.csv, selected_series.npz, subset_meta.json) stays tracked.
+data/raw/
+data/function_stats.csv

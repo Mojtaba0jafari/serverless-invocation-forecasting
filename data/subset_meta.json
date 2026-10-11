@@ -1,0 +1,34 @@
+{
+  "source": "Azure Functions 2019 invocation traces",
+  "archive": "azurefunctions-dataset2019.tar.xz",
+  "seed": 42,
+  "per_class": 20,
+  "train_days": [
+    1,
+    10
+  ],
+  "test_days": [
+    11,
+    14
+  ],
+  "sparse_zero_frac_min": 0.9,
+  "daily_acf_min": 0.3,
+  "bursty_cv_quantile": 0.75,
+  "bursty_cv_threshold": 2.0532552438942258,
+  "class_counts": {
+    "sparse": 54502,
+    "daily": 8040,
+    "other": 3934,
+    "bursty": 1918
+  },
+  "selected_counts": {
+    "sparse": 20,
+    "daily": 20,
+    "bursty": 20,
+    "other": 20
+  },
+  "series_shape": [
+    80,
+    20160
+  ]
+}
