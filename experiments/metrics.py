@@ -19,12 +19,16 @@ def self_check() -> None:
     y = np.array([[[100.0]]])
     short = score_arrays(y, np.array([[[80.0]]]))
     extra = score_arrays(y, np.array([[[130.0]]]))
-    # Forecast 80 prepares 8 containers against 10 needed: 20 invocations short, no waste.
-    if short["under_invocations"][0] != 20 or short["over_container_minutes"][0] != 0:
+    # Forecast 80 prepares 8 containers against 10 needed.
+    if short["short_container_minutes"][0] != 2 or short["over_container_minutes"][0] != 0:
         raise SystemExit("Provisioning check failed for a forecast of 80")
     # Forecast 130 prepares 13 containers: 3 idle container-minutes, no shortfall.
-    if extra["under_invocations"][0] != 0 or extra["over_container_minutes"][0] != 3:
+    if extra["short_container_minutes"][0] != 0 or extra["over_container_minutes"][0] != 3:
         raise SystemExit("Provisioning check failed for a forecast of 130")
+    # 8 and 5 both fit in one container, so the forecast error is not a shortfall.
+    same_container = score_arrays(np.array([[[8.0]]]), np.array([[[5.0]]]))
+    if same_container["short_container_minutes"][0] != 0 or same_container["over_container_minutes"][0] != 0:
+        raise SystemExit("Provisioning check failed for a forecast inside the same container")
     zeros = score_arrays(np.array([[[0.0]]]), np.array([[[0.0]]]))
     if zeros["smape_pct"][0] != 0:
         raise SystemExit("sMAPE of a zero minute should be 0")
@@ -50,7 +54,10 @@ def score_arrays(y: np.ndarray, yhat: np.ndarray) -> dict[str, np.ndarray]:
             out=np.full(len(y), np.nan),
             where=positive_count > 0,
         ),
-        "under_invocations": np.maximum(y - yhat, 0).sum(axis=(1, 2)),
+        "short_container_minutes": np.maximum(
+            np.ceil(y / CAPACITY) - np.ceil(yhat / CAPACITY),
+            0,
+        ).sum(axis=(1, 2)),
         "over_container_minutes": np.maximum(
             np.ceil(yhat / CAPACITY) - np.ceil(y / CAPACITY),
             0,
@@ -89,9 +96,9 @@ def class_table(per_function: pd.DataFrame) -> pd.DataFrame:
         smape_pct=("smape_pct", "mean"),
         smape_pct_median=("smape_pct", "median"),
         mae_nonzero=("mae_nonzero", "mean"),
-        under_invocations_sum=("under_invocations", "sum"),
+        short_container_minutes_sum=("short_container_minutes", "sum"),
         over_container_minutes_sum=("over_container_minutes", "sum"),
-        under_invocations_median=("under_invocations", "median"),
+        short_container_minutes_median=("short_container_minutes", "median"),
         over_container_minutes_median=("over_container_minutes", "median"),
         n_functions=("function_id", "size"),
     ).reset_index()

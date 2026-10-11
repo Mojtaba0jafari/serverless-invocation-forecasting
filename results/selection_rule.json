@@ -2,29 +2,29 @@
   {
     "class":"bursty",
     "chosen_model":"trailing_percentile",
-    "under_median_days_11_12":438.225,
+    "under_median_days_11_12":69.5,
     "over_median_days_11_12":1316.5,
     "smape_median_days_11_12":99.8649682997
   },
   {
     "class":"daily",
-    "chosen_model":"trailing_percentile",
-    "under_median_days_11_12":11.625,
-    "over_median_days_11_12":2113.5,
-    "smape_median_days_11_12":134.3171296296
+    "chosen_model":"chronos",
+    "under_median_days_11_12":0.0,
+    "over_median_days_11_12":1672.0,
+    "smape_median_days_11_12":128.9660892219
   },
   {
     "class":"other",
     "chosen_model":"trailing_percentile",
-    "under_median_days_11_12":54.575,
+    "under_median_days_11_12":0.0,
     "over_median_days_11_12":63.5,
     "smape_median_days_11_12":10.6860396981
   },
   {
     "class":"sparse",
-    "chosen_model":"ets",
-    "under_median_days_11_12":8.8068836673,
-    "over_median_days_11_12":1627.0,
-    "smape_median_days_11_12":111.847041623
+    "chosen_model":"chronos",
+    "under_median_days_11_12":0.0,
+    "over_median_days_11_12":2584.0,
+    "smape_median_days_11_12":181.1445996736
   }
 ]

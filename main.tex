@@ -65,7 +65,7 @@ your.email@aut.ac.ir}
 \maketitle
 
 \begin{abstract}
-Serverless platforms keep warm containers ready for a changing arrival rate. Too few containers cause cold starts, and too many sit idle. This paper compares six forecasters of per-minute function invocations on a public Azure Functions trace: three simple baselines, seasonal Holt--Winters, a pretrained time-series model, and a small LSTM. Functions are grouped into sparse, daily, bursty, and other workloads. Each forecast covers the next 60 minutes, and the fitted models see the previous day. Error is reported with a provisioning cost that counts missed invocations and extra container-minutes. On a typical function, copying the previous day has the lowest error. A high percentile of recent load misses fewer invocations and holds more idle capacity. Seasonal smoothing, Chronos-Bolt, and the LSTM remain well above that copy on daily functions. A rule that picks the lowest-shortfall model in each class selects seasonal smoothing for sparse functions on a margin of a fraction of an invocation, and on later days that choice wastes about 1,600 container-minutes with no shortfall gain.
+Serverless platforms keep warm containers ready for a changing arrival rate. Too few containers cause cold starts, and too many sit idle. This paper compares six forecasters of per-minute function invocations on a public Azure Functions trace: three simple baselines, seasonal Holt--Winters, a pretrained time-series model, and a small LSTM. Functions are grouped into sparse, daily, bursty, and other workloads. Each forecast covers the next 60 minutes, and the fitted models see the previous day. Error is reported beside a provisioning score that counts short and extra container-minutes, assuming one warm container serves 10 invocations a minute. On a typical function, copying the previous day has the lowest error. Forecasts that sit above the load leave almost no container short and hold many idle containers. A rule that picks the lowest-shortfall model in each class selects Chronos for sparse and daily functions. On later days that rule has a median shortfall of zero and about 1,700 extra container-minutes, while a high percentile of recent load has a median shortfall of half a container-minute and about 120 extra container-minutes.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -98,27 +98,27 @@ Six point forecasts are compared. Seasonal naive repeats the same hour of the pr
 
 The provisioning score assumes that one warm container serves 10 invocations in a minute. For a forecast $\hat{y}_t$ of the actual count $y_t$,
 \begin{equation}
-U = \sum_{t} \max(0,\, y_t - \hat{y}_t),
+S = \sum_{t} \max\!\left(0,\, \left\lceil y_t / 10 \right\rceil - \left\lceil \hat{y}_t / 10 \right\rceil\right),
 \label{eq:under}
 \end{equation}
 \begin{equation}
 O = \sum_{t} \max\!\left(0,\, \left\lceil \hat{y}_t / 10 \right\rceil - \left\lceil y_t / 10 \right\rceil\right).
 \label{eq:over}
 \end{equation}
-$U$ counts missed invocations, a proxy for cold-start risk. $O$ counts extra container-minutes, a proxy for waste. Any forecast in $(0, 10]$ prepares one container for that minute, so a small positive value on an idle minute costs a full container-minute and scores a large sMAPE. Forecast error is the symmetric mean absolute percentage error (sMAPE). A minute where both the actual value and the forecast are zero contributes nothing. On days 11--12, one bursty function accounts for 98.7\% of that class's missed invocations under last-value, so class means follow a single series. Every table below reports the median across functions.
+$S$ counts short container-minutes. $O$ counts extra container-minutes. A forecast error that stays inside the same container adds nothing to either sum: eight invocations against a forecast of five still needs one container. Any forecast in $(0, 10]$ prepares one container, so a small positive value on an idle minute costs a full container-minute and scores a large sMAPE. Forecast error is the symmetric mean absolute percentage error (sMAPE). A minute where both the actual value and the forecast are zero contributes nothing. A few heavy functions dominate class sums, so every table reports the median across functions.
 
 \section{Evaluation}
 \label{sec:evaluation}
-Table~\ref{tab:days1114} summarizes the four test days. Seasonal naive has the lowest overall median sMAPE, 7.1\%. The gap is largest on daily functions, where its median sMAPE is 3.9\%, against 40.0\% for the LSTM, 60.6\% for seasonal Holt--Winters, and 125.0\% for Chronos. Those three models all observed the previous day. Fig.~\ref{fig:examples} shows the pattern the copy uses. On the daily example, yesterday's shape follows the load. The trailing percentile sits in steps above it. On the sparse example, arrivals are isolated spikes. The LSTM has the lowest sparse sMAPE, 0.7\%, and no idle containers, because it predicts zeros. On daily functions its median shortfall is 1{,}361 invocations, against 122.5 for seasonal naive.
+Table~\ref{tab:days1114} summarizes the four test days. Seasonal naive has the lowest overall median sMAPE, 7.1\%. The gap is largest on daily functions, where its median sMAPE is 3.9\%, against 40.0\% for the LSTM, 60.6\% for seasonal Holt--Winters, and 125.0\% for Chronos. Those three models all observed the previous day. Fig.~\ref{fig:examples} shows the pattern the copy uses. On the daily example, yesterday's shape follows the load. The trailing percentile sits in steps above it. On the sparse example, arrivals are isolated spikes. The LSTM has the lowest sparse sMAPE, 0.7\%, and no idle containers, because it predicts zeros. On daily functions its median container shortfall is 1{,}088, against 45 for seasonal naive.
 
-Median absolute error tells a sharper story on daily functions. Seasonal naive and seasonal Holt--Winters are close, 0.043 and 0.042 invocations per minute. The smoothing model matches the level and still scores 60.6\% sMAPE, because a positive forecast of an idle minute is a 200\% sMAPE term and, under \eqref{eq:over}, one extra container. That is why ETS and Chronos sit on the right of Fig.~\ref{fig:tradeoff}. The trailing percentile has the smallest overall shortfall among the point forecasts, 95.5 missed invocations, against 206.0 for seasonal naive, and it pays 729 extra container-minutes against 80.5. Raising Chronos from the median to the 90th percentile cuts the median shortfall from 749.2 to 119.7 and raises extra container-minutes from 3{,}281 to 4{,}770. The 90th percentile is near the trailing percentile on shortfall and still wastes more.
+Container shortfall reorders the same forecasts. Chronos has the smallest overall median, 1.0 short container-minute, because the forecast sits above the load, and it pays 3{,}281 extra container-minutes. The trailing percentile is next among the point forecasts that an operator might actually run, at 18.5 short container-minutes and 729 extra. Seasonal naive is short 75 container-minutes and wastes 80.5. The LSTM, which predicts low, is short 814. On daily functions both Chronos and the trailing percentile have a median shortfall of zero; Chronos wastes 3{,}549 container-minutes there and the percentile wastes 4{,}386.5. Raising Chronos from the median to the 90th percentile brings the overall median shortfall from 1.0 to 0 and raises extra container-minutes from 3{,}281 to 4{,}770. Fig.~\ref{fig:tradeoff} shows that pair of axes. The upper quantiles lie on the zero-shortfall line.
 
-The selection rule uses only point forecasts. On days 11--12, each class takes the forecast with the lowest median shortfall, then the lower waste, then the lower sMAPE. Daily, bursty, and other functions select the trailing percentile. Sparse functions select seasonal Holt--Winters. On those two days its median shortfall is 8.8 invocations, against 9.0 for seasonal naive, while its median waste is 1{,}627 container-minutes against 8.5. Table~\ref{tab:heldout} applies that frozen rule to days 13--14. The sparse row is the whole difference from always using the trailing percentile: missed invocations stay at 0.0, and extra container-minutes rise to 1{,}598.5, against 0.5 for always using seasonal naive. Across all functions the rule's median shortfall is 16.6, against 21.0 for the trailing percentile and 40.0 for seasonal naive, and its median waste is 1{,}117 container-minutes. The shortfall rule therefore spends idle containers to buy a fraction of an invocation.
+The selection rule uses only point forecasts. On days 11--12, each class takes the forecast with the lowest median shortfall, then the lower waste, then the lower sMAPE. Sparse functions select Chronos: its median shortfall is 0, against 8.5 for seasonal naive. Daily functions select Chronos as well. The trailing percentile also has a daily shortfall of 0 on those days, and Chronos wastes less, 1{,}672 container-minutes against 2{,}113.5. Bursty and other functions select the trailing percentile. Table~\ref{tab:heldout} applies that frozen rule to days 13--14. Across all functions the rule's median shortfall is 0 and its median waste is 1{,}713.5 container-minutes. Always using Chronos matches the zero shortfall and wastes 1{,}920. Always using the trailing percentile has a median shortfall of 0.5 and wastes 120.5. Always using seasonal naive has a median shortfall of 12 and wastes 15. On the held-out sparse functions, seasonal naive also has a shortfall of 0, with 0.5 extra container-minutes, while the rule's Chronos choice wastes 2{,}703.5. The shortfall rule therefore spends idle containers to buy a gap that the later days do not repeat.
 
-The study has four limits. The trace is from 2019 and contains 80 sampled functions, not a live deployment. The capacity of 10 invocations per container-minute is an assumption, not a measured service rate. $U$ and $O$ are computed from the trace, not from cold starts on a platform such as OpenWhisk. Medians are the right summary here, and they are not a substitute for a cost model that weights a few very large functions the way a provider bill would.
+The study has four limits. The trace is from 2019 and contains 80 sampled functions, not a live deployment. The capacity of 10 invocations per container-minute is an assumption, not a measured service rate. $S$ and $O$ are computed from the trace, not from cold starts on a platform such as OpenWhisk. Medians are the right summary here, and they are not a substitute for a cost model that weights a few very large functions the way a provider bill would.
 
 \begin{table}[t]
-\caption{Median sMAPE, missed invocations, and extra container-minutes on days 11--14.}
+\caption{Median sMAPE, short container-minutes, and extra container-minutes on days 11--14.}
 \label{tab:days1114}
 \centering
 \scriptsize
@@ -128,27 +128,27 @@ The study has four limits. The trace is from 2019 and contains 80 sampled functi
 \textbf{Model} & \textbf{Metric} & \textbf{Sparse} & \textbf{Daily} & \textbf{Bursty} & \textbf{Other} & \textbf{All} \\
 \hline
 Seasonal naive & sMAPE (\%) & 0.9 & 3.9 & 41.0 & 12.9 & 7.1 \\
- & Missed & 23.0 & 122.5 & 1170.5 & 259.5 & 206.0 \\
+ & Short & 13.0 & 45.0 & 718.0 & 150.0 & 75.0 \\
  & Extra & 13.0 & 43.0 & 719.0 & 150.5 & 80.5 \\
 \hline
 Last value & sMAPE (\%) & 0.9 & 37.8 & 48.2 & 11.9 & 19.2 \\
- & Missed & 27.5 & 1152.5 & 1151.0 & 259.0 & 916.0 \\
+ & Short & 17.0 & 1150.0 & 763.5 & 99.5 & 410.0 \\
  & Extra & 0.0 & 31.0 & 593.5 & 93.5 & 63.5 \\
 \hline
 Trailing percentile & sMAPE (\%) & 3.8 & 134.4 & 74.6 & 12.9 & 24.7 \\
- & Missed & 27.1 & 24.6 & 554.1 & 115.4 & 95.5 \\
+ & Short & 15.0 & 0.0 & 143.0 & 0.0 & 18.5 \\
  & Extra & 87.5 & 4386.5 & 2183.0 & 98.0 & 729.0 \\
 \hline
 ETS & sMAPE (\%) & 112.8 & 60.6 & 116.1 & 15.7 & 66.4 \\
- & Missed & 22.9 & 87.3 & 1001.9 & 310.5 & 233.2 \\
+ & Short & 3.5 & 21.0 & 250.0 & 0.0 & 15.0 \\
  & Extra & 3225.5 & 1981.5 & 2939.0 & 1046.0 & 2101.5 \\
 \hline
 LSTM & sMAPE (\%) & 0.7 & 40.0 & 43.7 & 41.7 & 40.0 \\
- & Missed & 34.0 & 1361.2 & 1546.8 & 1647.8 & 1201.3 \\
+ & Short & 19.0 & 1088.0 & 787.5 & 1152.0 & 814.0 \\
  & Extra & 0.0 & 13.0 & 459.5 & 122.5 & 46.0 \\
 \hline
 Chronos & sMAPE (\%) & 178.6 & 125.0 & 114.2 & 12.0 & 119.4 \\
- & Missed & 34.0 & 1129.3 & 1496.8 & 130.5 & 749.2 \\
+ & Short & 0.5 & 0.0 & 276.0 & 0.0 & 1.0 \\
  & Extra & 5126.0 & 3549.0 & 2760.5 & 694.0 & 3281.0 \\
 \hline
 \end{tabular}
@@ -164,44 +164,50 @@ Chronos & sMAPE (\%) & 178.6 & 125.0 & 114.2 & 12.0 & 119.4 \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/provisioning_tradeoff}
-\caption{Median missed invocations against median extra container-minutes on days 11--14. Both axes are logarithmic. Orange squares are Chronos forecasts at the 80th and 90th percentiles. Closer to the lower left is better.}
+\caption{Median short container-minutes against median extra container-minutes on days 11--14. The horizontal axis is logarithmic. Orange squares are Chronos forecasts at the 80th and 90th percentiles. Closer to the lower left is better.}
 \label{fig:tradeoff}
 \end{figure}
 
 \begin{table}[t]
-\caption{Held-out medians on days 13--14. The rule uses seasonal Holt--Winters for sparse functions and the trailing percentile otherwise. The other rows use one forecast for every class.}
+\caption{Held-out medians on days 13--14. The rule uses Chronos for sparse and daily functions and the trailing percentile otherwise. The other rows use one forecast for every class.}
 \label{tab:heldout}
 \centering
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
 \begin{tabular}{|l|l|r|r|r|}
 \hline
-\textbf{Policy} & \textbf{Class} & \textbf{sMAPE (\%)} & \textbf{Missed} & \textbf{Extra} \\
+\textbf{Policy} & \textbf{Class} & \textbf{sMAPE (\%)} & \textbf{Short} & \textbf{Extra} \\
 \hline
-Selection rule & Sparse & 111.6 & 0.0 & 1598.5 \\
- & Daily & 134.5 & 12.6 & 2278.5 \\
- & Bursty & 52.5 & 122.8 & 722.5 \\
- & Other & 10.8 & 56.0 & 31.5 \\
- & All & 49.9 & 16.6 & 1117.0 \\
+Selection rule & Sparse & 187.7 & 0.0 & 2703.5 \\
+ & Daily & 149.7 & 0.0 & 1933.0 \\
+ & Bursty & 52.5 & 33.0 & 722.5 \\
+ & Other & 10.8 & 0.0 & 31.5 \\
+ & All & 113.6 & 0.0 & 1713.5 \\
 \hline
 Seasonal naive & Sparse & 0.1 & 0.0 & 0.5 \\
- & Daily & 4.0 & 41.5 & 21.0 \\
- & Bursty & 14.2 & 361.5 & 258.0 \\
- & Other & 9.3 & 133.0 & 39.0 \\
- & All & 2.7 & 40.0 & 15.0 \\
+ & Daily & 4.0 & 17.5 & 21.0 \\
+ & Bursty & 14.2 & 260.5 & 258.0 \\
+ & Other & 9.3 & 42.0 & 39.0 \\
+ & All & 2.7 & 12.0 & 15.0 \\
 \hline
 Trailing percentile & Sparse & 0.1 & 2.0 & 0.0 \\
- & Daily & 134.5 & 12.6 & 2278.5 \\
- & Bursty & 52.5 & 122.8 & 722.5 \\
- & Other & 10.8 & 56.0 & 31.5 \\
- & All & 16.2 & 21.0 & 120.5 \\
+ & Daily & 134.5 & 0.0 & 2278.5 \\
+ & Bursty & 52.5 & 33.0 & 722.5 \\
+ & Other & 10.8 & 0.0 & 31.5 \\
+ & All & 16.2 & 0.5 & 120.5 \\
+\hline
+Chronos & Sparse & 187.7 & 0.0 & 2703.5 \\
+ & Daily & 149.7 & 0.0 & 1933.0 \\
+ & Bursty & 129.3 & 78.5 & 1665.5 \\
+ & Other & 13.5 & 0.0 & 332.5 \\
+ & All & 131.2 & 0.0 & 1920.0 \\
 \hline
 \end{tabular}
 \end{table}
 
 \section{Conclusion}
 \label{sec:conclusion}
-On this trace, copying the previous day is the accurate forecast, including for functions whose shape repeats every day. Seasonal Holt--Winters, Chronos-Bolt, and a small LSTM all receive that same day and remain well above the copy on error. The trailing percentile misses fewer invocations because it keeps spare containers. A shortfall-only rule selects seasonal smoothing for sparse functions on a margin of 0.2 invocations and, on held-out days, spends about 1,600 extra container-minutes for no shortfall gain. A next measurement is to replace the capacity assumption with cold starts recorded on a real platform.
+On this trace, copying the previous day is the accurate forecast, including for functions whose shape repeats every day. Seasonal Holt--Winters, Chronos-Bolt, and a small LSTM all receive that same day and remain well above the copy on error. Measured in containers, the high forecasts are the ones with almost no shortfall, and they pay for it with idle containers. A shortfall-only rule selects Chronos for sparse and daily functions. On held-out days its median shortfall is zero and its median waste is about 1,700 container-minutes, while the trailing percentile is short by half a container-minute and wastes about 120. A next measurement is to replace the capacity assumption with cold starts recorded on a real platform.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

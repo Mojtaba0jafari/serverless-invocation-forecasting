@@ -168,7 +168,7 @@ def main() -> None:
             "class",
             "mae_median",
             "smape_pct_median",
-            "under_invocations_median",
+            "short_container_minutes_median",
             "over_container_minutes_median",
         ]
     ]

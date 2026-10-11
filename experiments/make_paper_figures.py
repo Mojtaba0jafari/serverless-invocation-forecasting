@@ -39,7 +39,7 @@ DAY_ORIGINS = 1440 // 60
 
 def rounded(frame: pd.DataFrame) -> pd.DataFrame:
     out = frame.copy()
-    for column in ("smape_pct_median", "under_invocations_median", "over_container_minutes_median"):
+    for column in ("smape_pct_median", "short_container_minutes_median", "over_container_minutes_median"):
         out[column] = out[column].map(lambda value: round(float(value), 1))
     return out
 
@@ -53,7 +53,7 @@ def write_tables() -> None:
             "model",
             "class",
             "smape_pct_median",
-            "under_invocations_median",
+            "short_container_minutes_median",
             "over_container_minutes_median",
         ]
     ].copy()
@@ -71,7 +71,7 @@ def write_tables() -> None:
             "model",
             "class",
             "smape_pct_median",
-            "under_invocations_median",
+            "short_container_minutes_median",
             "over_container_minutes_median",
         ]
     ].copy()
@@ -164,7 +164,7 @@ def plot_tradeoff() -> None:
     for model in models:
         row = part.loc[model]
         x = float(row["over_container_minutes_median"])
-        y_value = float(row["under_invocations_median"])
+        y_value = float(row["short_container_minutes_median"])
         quantile = model.startswith("chronos_q")
         axis.scatter(
             x,
@@ -176,11 +176,10 @@ def plot_tradeoff() -> None:
             label=LABELS[model],
         )
     axis.set_xscale("log")
-    axis.set_yscale("log")
-    axis.set_xlim(1.5, 20000)
-    axis.set_ylim(50, 4000)
+    axis.set_xlim(20, 12000)
+    axis.set_ylim(-40, 1000)
     axis.set_xlabel("Median extra container-minutes")
-    axis.set_ylabel("Median missed invocations")
+    axis.set_ylabel("Median short container-minutes")
     axis.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.32), ncol=2)
     fig.tight_layout()
     fig.savefig(FIGURES / "provisioning_tradeoff.pdf", bbox_inches="tight")

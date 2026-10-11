@@ -46,7 +46,7 @@ def class_summary(per_function: pd.DataFrame) -> pd.DataFrame:
 def choose_rule(per_function: pd.DataFrame) -> pd.DataFrame:
     """On days 11-12, pick a point model per class.
 
-    Primary key: median under-provisioned invocations.
+    Primary key: median short container-minutes.
     Tie breakers: median over-provisioned container-minutes, then median sMAPE.
     Only the median (point) Chronos forecast competes, not the upper quantiles.
     """
@@ -58,7 +58,7 @@ def choose_rule(per_function: pd.DataFrame) -> pd.DataFrame:
         ranked = (
             group.groupby("model", sort=False)
             .agg(
-                under_median=("under_invocations", "median"),
+                under_median=("short_container_minutes", "median"),
                 over_median=("over_container_minutes", "median"),
                 smape_median=("smape_pct", "median"),
             )
@@ -122,7 +122,7 @@ def main() -> None:
             "class",
             "mae_median",
             "smape_pct_median",
-            "under_invocations_median",
+            "short_container_minutes_median",
             "over_container_minutes_median",
         ]
     ]
@@ -135,7 +135,7 @@ def main() -> None:
         [
             "model",
             "class",
-            "under_invocations_median",
+            "short_container_minutes_median",
             "over_container_minutes_median",
             "smape_pct_median",
         ]

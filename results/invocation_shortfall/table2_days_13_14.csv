@@ -1,0 +1,16 @@
+model,class,smape_pct_median,under_invocations_median,over_container_minutes_median
+always_seasonal_naive,sparse,0.1,0.0,0.5
+always_seasonal_naive,daily,4.0,41.5,21.0
+always_seasonal_naive,bursty,14.2,361.5,258.0
+always_seasonal_naive,other,9.3,133.0,39.0
+always_seasonal_naive,all,2.7,40.0,15.0
+always_trailing_percentile,sparse,0.1,2.0,0.0
+always_trailing_percentile,daily,134.5,12.6,2278.5
+always_trailing_percentile,bursty,52.5,122.8,722.5
+always_trailing_percentile,other,10.8,56.0,31.5
+always_trailing_percentile,all,16.2,21.0,120.5
+selection_rule,sparse,111.6,0.0,1598.5
+selection_rule,daily,134.5,12.6,2278.5
+selection_rule,bursty,52.5,122.8,722.5
+selection_rule,other,10.8,56.0,31.5
+selection_rule,all,49.9,16.6,1117.0
