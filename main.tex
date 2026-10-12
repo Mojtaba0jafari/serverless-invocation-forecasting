@@ -55,12 +55,6 @@
 Tehran, Iran \\
 mojtaba.jafari@aut.ac.ir}
 \and
-\IEEEauthorblockN{Ehsan Moradi}
-\IEEEauthorblockA{\textit{Department of Computer Engineering} \\
-\textit{Amirkabir University of Technology}\\
-Tehran, Iran \\
-your.email@aut.ac.ir}
-\and
 \IEEEauthorblockN{Amir Kalbasi}
 \IEEEauthorblockA{\textit{Department of Computer Engineering} \\
 \textit{Amirkabir University of Technology}\\
@@ -71,7 +65,7 @@ kalbasi@aut.ac.ir}
 \maketitle
 
 \begin{abstract}
-A cold start is the reason to forecast serverless invocations: a request that finds no warm container waits while one is created. The Azure Functions trace used here records per-minute counts, not container starts, so we count the containers a forecast leaves short and the containers it leaves idle, assuming one container serves 10 invocations a minute. Six forecasters and several references are compared on 80 functions in four workload classes, with an hourly 60-minute forecast. A first scoring made Chronos and ETS look wasteful because a forecast of 0.01 invocations still prepares a container. After forecasts below one half are set to zero, their median idle capacity falls from thousands of container-minutes to about a hundred or fewer. A previous-hour copy, seasonal naive, and Holt--Winters have the lowest error and are close to each other, and neither Chronos nor an LSTM beats them. A high quantile of recent load cuts the median shortfall from 75 to 18.5 container-minutes at about 730 extra container-minutes, and a high Chronos quantile does the same. A class-specific choice made on two days was not distinguishable from seasonal naive on the next weekend. A reactive ten-minute keep-alive that reads actual counts had a far lower shortfall than any hourly forecast.
+Proactive capacity provisioning mitigates serverless cold starts by pre-warming containers, yet practical autoscaling is constrained by the memory cost of idle instances. Evaluating forecasters under an operational capacity model reveals that conventional statistical error metrics obscure essential provisioning trade-offs. Because container instantiation follows a discrete step function, continuous forecasters induce severe idle memory inflation; enforcing an operational half-invocation cutoff resolves this artifact, reducing median idle capacity from thousands of container-minutes to under a hundred. Benchmarking six diverse forecasters across 80 Azure Functions workloads shows that lightweight recency heuristics (Previous Hour, Seasonal Naive, and ETS) achieve the lowest point-forecast errors, rivaling or outperforming deep LSTMs and foundation models (Chronos-Bolt). Cold-start mitigation is governed by headroom rather than model complexity: tracking upper arrival quantiles (Trailing P95 or Chronos P90) slashes median shortfall from 75.0 to 18.5 container-minutes. Finally, archetype-specific tuning over brief windows fails to beat uniform policies across temporal shifts, while reactive keep-alive baselines underscore the latency penalty of hourly forecasting.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -225,7 +219,7 @@ Several limitations contextualize these findings. First, our evaluation uses tra
 
 \section{Conclusion}
 \label{sec:conclusion}
-The goal is fewer cold starts. This trace cannot count them, so the evidence is the container shortfall and the idle capacity under a stated capacity, with idle capacity also weighted by application memory. Three findings stand. First, the idle cost of continuous forecasts depended on a cutoff for tiny forecasts; with it, ETS, Chronos, and an LSTM are not wasteful. Second, a previous-hour copy, seasonal naive, and Holt--Winters are the most accurate and statistically close, and neither Chronos nor the LSTM beats them overall, although Chronos is best on other functions and ETS on daily ones. Third, shortfall is bought with headroom, and a high quantile of recent load buys it at about the same price as a high quantile of Chronos: a median shortfall of 18.5 container-minutes instead of 75, for about 730 extra. A class-specific choice made on two days was not distinguishable from seasonal naive, and a reactive 10-minute keep-alive had a far lower shortfall than any hourly forecast. The next measurement is shorter forecast intervals with rolling re-forecasting, and cold starts recorded on a real platform.
+Proactive provisioning seeks to mitigate serverless cold starts without inflating idle memory overhead. Evaluating diverse forecasting architectures across the Azure Functions benchmark reveals four key operational findings. First, translating continuous forecasts into integer containers induces step-function distortion; enforcing a half-invocation cutoff ($\hat{y}_t < 0.5 \implies 0$) prevents foundation and neural models from spuriously allocating idle capacity. Second, simple recency heuristics---Previous Hour, Seasonal Naive, and ETS---demonstrate the lowest fleet-wide error, matching or outperforming complex deep LSTMs and zero-shot Chronos-Bolt. Third, cold-start protection is bought through headroom: upper arrival quantiles (Trailing P95 and Chronos P90) reduce median shortfall from 75.0 to 18.5 container-minutes, though unpredicted bursts impose a $\sim$14\% lower bound on proactive provisioning that reactive keep-alive baselines navigate more flexibly. Finally, per-archetype model selection over brief calibration windows does not beat uniform policies across temporal shifts. Future work will explore sub-hourly rolling re-forecasting and kernel-level validation in production clusters.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
