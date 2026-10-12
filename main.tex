@@ -49,17 +49,23 @@
 % Funding footnote, if any. Delete it when there is no sponsor.
 % \thanks{Identify the funding agency here.}
 
-\author{\IEEEauthorblockN{Ehsan Moradi}
+\author{\IEEEauthorblockN{Mojtaba Jafari}
+\IEEEauthorblockA{\textit{Department of Computer Engineering} \\
+\textit{Amirkabir University of Technology}\\
+Tehran, Iran \\
+mojtaba.jafari@aut.ac.ir}
+\and
+\IEEEauthorblockN{Ehsan Moradi}
 \IEEEauthorblockA{\textit{Department of Computer Engineering} \\
 \textit{Amirkabir University of Technology}\\
 Tehran, Iran \\
 your.email@aut.ac.ir}
-% \and
-% \IEEEauthorblockN{Seyyed Ahmad Javadi}
-% \IEEEauthorblockA{\textit{Department of Computer Engineering} \\
-% \textit{Amirkabir University of Technology}\\
-% Tehran, Iran \\
-% email address or ORCID}
+\and
+\IEEEauthorblockN{Amir Kalbasi}
+\IEEEauthorblockA{\textit{Department of Computer Engineering} \\
+\textit{Amirkabir University of Technology}\\
+Tehran, Iran \\
+kalbasi@aut.ac.ir}
 }
 
 \maketitle
@@ -74,19 +80,38 @@ serverless computing, workload forecasting, cold start, provisioning
 
 \section{Introduction}
 \label{sec:introduction}
-A serverless platform receives a changing number of function invocations and must decide how many warm containers to keep. A shortfall makes some requests wait for a cold start. Spare containers consume memory and money while they sit idle. A forecast of the next hour can drive that decision, but a lower forecast error does not by itself mean a better operating point. Under-predicting and over-predicting have different costs.
+Serverless computing, epitomized by Function-as-a-Service (FaaS), has transformed modern cloud architectures by offering automatic elasticity, rapid scalability, and fine-grained pay-per-use billing. Under this paradigm, developers deploy stateless event-driven functions while cloud providers assume full responsibility for provisioning and managing the underlying execution infrastructure. However, delivering this seamless abstraction introduces a critical operational dilemma. When incoming request rates surge or previously inactive functions are triggered, initiating a fresh container environment incurs significant cold-start latency---often orders of magnitude longer than function execution itself---jeopardizing Service Level Objectives (SLOs). Conversely, retaining an excessive fleet of pre-warmed containers to buffer against potential demand leads to substantial memory waste and inflated operational expenditures.
 
-Forecasting is already part of production resource management. The public Azure Functions study uses a time-series forecast inside a larger keep-alive policy \cite{shahrad2020serverless}. What is still easy to miss is that functions are not one workload. A timer with a daily shape, a rarely called HTTP function, and a bursty queue consumer can prefer different forecasters. Average error over the whole trace hides that split.
+To reconcile this latency-versus-cost trade-off, cloud platforms increasingly deploy predictive resource provisioning, anticipating future invocation volume to warm containers proactively. Yet, a fundamental disconnect exists between standard time-series evaluation and practical cloud resource management. Traditional statistical metrics, such as symmetric mean absolute percentage error (sMAPE) or mean squared error (MSE), treat forecast deviations symmetrically. In production environments, however, forecasting errors carry profoundly asymmetric consequences: an under-prediction directly translates into container shortfalls and unmitigated cold starts, whereas an over-prediction merely results in transiently idle warm containers. Consequently, a predictor that achieves the lowest numerical error may yield an inferior operational operating point if its residual errors systematically trigger cold starts.
 
-This paper is a comparative study, not a new scheduler. On 80 functions from the 2019 Azure Functions invocation trace, it asks which forecaster an operator should use for which class of function, and what that choice costs in short containers versus idle containers. The fitted models all see the previous day, so a daily pattern is inside their window. The contributions are a class-aware comparison, a provisioning score beside forecast error, and a selection rule fit on two days and checked on the next two.
+Compounding this challenge is the extreme heterogeneity inherent in serverless workloads. Large-scale empirical traces, such as those from Microsoft Azure Functions \cite{shahrad2020serverless}, demonstrate that serverless invocations rarely conform to a single distribution. Instead, workloads encompass heavily skewed behaviors: millions of ultra-sparse functions invoked only a few times per day, structured functions with rigid diurnal seasonality, and highly erratic, bursty event processors. Evaluating forecasting models via fleet-wide aggregate errors obscures these vital distinctions, hiding which algorithmic approach genuinely excels for a specific workload profile. 
+
+In this work, we conduct a systematic, capacity-aware empirical comparison of invocation forecasters across representative serverless workload archetypes. Rather than proposing a new autoscaling controller, we investigate the fundamental relationship between time-series predictor design, forecast error, and actual container provisioning performance. We evaluate six diverse forecasting strategies---ranging from simple, training-free heuristics (last-value, trailing percentiles, and seasonal naive) to classical time-series smoothing (seasonal Holt--Winters), deep recurrent architectures (LSTM), and modern zero-shot pretrained foundation models (Chronos-Bolt \cite{ansari2024chronos})---across 80 diverse functions sampled from the public Azure Functions trace.
+
+Specifically, this paper makes the following contributions:
+\begin{itemize}
+    \item \textbf{Workload-Aware Comparative Evaluation:} We categorize serverless functions into four empirical archetypes (sparse, daily-periodic, bursty, and general) and benchmark six forecasting models under a consistent 60-minute prediction horizon with 24 hours of historical context.
+    \item \textbf{Capacity-Centric Provisioning Metrics:} Beyond conventional sMAPE, we introduce a capacity-aware provisioning metric that translates invocation forecasts directly into short and extra container-minutes, exposing the critical divergence between statistical accuracy and physical provisioning efficiency.
+    \item \textbf{Practical Selection Heuristics and Insights:} We analyze an empirical model-selection heuristic calibrated on validation days and evaluated on held-out test data. Our findings demonstrate that while pretrained foundation models like Chronos can eliminate container shortfalls, they incur massive over-provisioning overhead; conversely, simple seasonal naive heuristics often achieve superior statistical fidelity and well-balanced operational costs.
+\end{itemize}
+
+The remainder of this paper is organized as follows: Section~\ref{sec:related} reviews related work in serverless autoscaling and workload prediction. Section~\ref{sec:setup} details the workload characterization, model architectures, and provisioning metrics. Section~\ref{sec:evaluation} presents the experimental results, capacity sensitivity analysis, and study limitations. Finally, Section~\ref{sec:conclusion} concludes the paper.
 
 \section{Related Work}
 \label{sec:related}
-Shahrad et al.\ characterize the Azure Functions workload and show that most functions are invoked rarely \cite{shahrad2020serverless}. Their hybrid policy keeps containers warm from a histogram of idle times and falls back to a time-series forecast when the histogram does not cover the idle gaps. This paper uses the same public invocation counts. It does not reimplement that keep-alive policy. The decision here is the number of containers implied by a forecast of arrivals, under a fixed service rate.
 
-Chronos trains a probabilistic forecaster on a large collection of time series and can forecast a new series without retraining \cite{ansari2024chronos}. Chronos-Bolt is a faster variant that emits quantile forecasts for the whole horizon in one pass. We use the small Chronos-Bolt checkpoint with no fine-tuning, and we score its median and two upper quantiles. Upper quantiles are a direct way to buy fewer shortfalls by preparing more containers.
+\subsection{Workload Characterization and Keep-Alive Strategies}
+A prerequisite for effective serverless resource allocation is understanding real-world invocation patterns. In their seminal characterization of Microsoft Azure Functions, Shahrad et al.\ demonstrated that serverless workloads exhibit extreme skewness: the vast majority of functions are invoked infrequently, inter-arrival times span several orders of magnitude, and memory consumption remains concentrated in a small subset of applications \cite{shahrad2020serverless}. To curb cold starts while limiting idle resource consumption, they proposed a practical hybrid keep-alive policy that tracks idle-time histograms and falls back to a time-series predictor when inter-invocation intervals exceed observed thresholds. Building upon these observations, recent efforts such as Lambda-Warmer \cite{singh2026lambdawarmer} employ measurement-driven adaptation to tune keep-alive intervals dynamically based on empirical container reuse patterns rather than static timeouts. While keep-alive heuristics effectively capture warm container reuse during active phases, they remain fundamentally reactive when confronted with prolonged silence or abrupt traffic shifts, underscoring the necessity of proactive invocation forecasting.
 
-The learned comparisons are seasonal exponential smoothing, Chronos, and one shared LSTM. Under one public trace, one horizon, and a full day of history, do those models beat simple rules that an operator can run without training?
+\subsection{Predictive Autoscaling and Proactive Schedulers}
+To anticipate arrival surges before cold starts occur, recent research integrates predictive modeling directly into the serverless autoscaling loop. Rather than assessing forecasting models in isolation, modern frameworks couple predictions with custom scaling controllers. For instance, Zhang et al.\ introduced AAPA \cite{zhang2025aapa}, an archetype-aware predictive autoscaler on Kubernetes that decomposes invocation histories into spike, periodic, ramp, and stationary patterns, mapping each archetype to a tailored autoscaling policy with uncertainty quantification. Daraghmeh et al.\ framed container scaling as a classification problem, leveraging machine learning classifiers to determine whether to load or unload containers based on historical feature engineering \cite{daraghmeh2025scaling}. 
+
+Beyond pure classification, hybrid and control-theoretic methodologies have gained traction. Shiekhani et al.\ combined ARIMA with gradient-boosted decision trees to pre-warm containers and schedule functions on OpenWhisk \cite{shiekhani2025hybrid}, while Nguyen et al.\ integrated Fourier series forecasting with model predictive control (MPC) to guarantee proactive container readiness under latency constraints \cite{nguyen2025mpc}. Similarly, deep neural architectures have been deployed to predict cold-start events directly, subsequently modulating provisioned concurrency levels \cite{kumar2025coldstart}. While these studies illustrate the potential of prediction-guided autoscaling, they typically evaluate holistic controllers where the raw performance of the forecasting engine is entangled with platform-specific scheduling heuristics, bin packing, or container reuse policies. In contrast, our study isolates the forecaster layer under a standardized, workload-classified protocol, systematically interrogating how alternative forecasters translate invocation predictions into physical container capacity gaps.
+
+\subsection{Time-Series Forecasters: From Heuristics to Foundation Models}
+The landscape of time-series forecasting in systems research spans a spectrum from lightweight empirical heuristics to sophisticated neural architectures. For periodic and predictable workloads, domain-specific baselines such as seasonal naive repetition and classical exponential smoothing (e.g., Holt--Winters ETS) remain widely used due to their minimal computational overhead and interpretability. For complex non-linear patterns, deep recurrent models such as Long Short-Term Memory (LSTM) networks have long represented the standard learned approach, though they require extensive historical data and specialized training pipelines.
+
+Most recently, the emergence of pretrained time-series foundation models has challenged the convention of training task-specific predictors. Ansari et al.\ introduced Chronos \cite{ansari2024chronos}, a probabilistic framework that tokenizes real-valued time series and trains language-model architectures across massive, heterogeneous corpora to achieve zero-shot forecasting on unseen domains. Its high-throughput variant, Chronos-Bolt, emits multi-horizon quantile forecasts in a single forward pass, while Chronos-2 extends these capabilities to multivariate settings with exogenous covariates \cite{ansari2025chronos2}. In serverless provisioning, upper quantiles offer an attractive mathematical mechanism to hedge against cold-start shortfalls by deliberately pre-warming surplus capacity. However, whether such zero-shot foundation models genuinely surpass lightweight, domain-tuned heuristics---and at what resource cost in idle container-minutes---remains an open question that this empirical investigation resolves.
 
 \section{Setup}
 \label{sec:setup}
