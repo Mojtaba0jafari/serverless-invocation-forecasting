@@ -1,0 +1,9 @@
+policy,smape,S,O
+shortfall_first,12.664753080883544,0.0,120.0
+cost_aware_S_plus_O,1.5972222222222223,5.0,0.0
+always_seasonal_naive,2.71875,12.0,15.0
+always_last_value,11.335648148148149,115.5,0.0
+always_trailing_p95,16.22482112260321,0.5,120.5
+always_ets,7.761063923827562,8.5,39.5
+always_lstm,12.349705090769431,70.5,0.0
+always_chronos,7.605224806700813,47.0,0.0
