@@ -26,6 +26,7 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{url}
 
 % The stock IEEEtran conference class leaves the running header empty.
 % IKT's Word template adds this line to the first page only, centered,
@@ -98,12 +99,12 @@ Classical baselines, including seasonal naive repetition and Holt--Winters smoot
 
 \section{Setup}
 \label{sec:setup}
-Our empirical study evaluates the public Microsoft Azure Functions dataset \cite{shahrad2020serverless}, which records per-minute invocation counts over 14 consecutive days (treating missing days as 1{,}440 zeros). To capture the spectrum of production behaviors, we classify functions into four distinct archetypes based on profiling statistics from days 1--10:
+We evaluate the public Microsoft Azure Functions dataset \cite{shahrad2020serverless}, recording per-minute invocation counts over 14 days (missing days treated as 1{,}440 zeros). We classify functions into four archetypes based on days 1--10 profiling:
 \textit{sparse} functions exhibit zero invocations in at least 90\% of recorded minutes (representing 54{,}502 of the 68{,}394 fleet functions);
 \textit{daily} functions exhibit strong diurnal periodicity, identified by a lag-1440 autocorrelation exceeding $0.30$;
 \textit{bursty} functions capture volatile, non-periodic arrivals where the coefficient of variation reaches at least $2.05$ (the 75th percentile among non-sparse functions); and
 \textit{other} functions comprise the remaining non-periodic workloads.
-We sample 20 eligible functions from each archetype (seed 42), requiring at least one invocation during days 1--10 and days 11--14, yielding an 80-function benchmark.
+We sample 20 eligible functions per archetype (seed 42), requiring at least one invocation in days 1--10 and 11--14 (80 functions total). All evaluation code, function identifiers, and trained models are publicly available at \url{https://github.com/Mojtaba0jafari/serverless-invocation-forecasting}.
 
 Forecasts are generated for a 60-minute lookahead horizon and re-issued hourly across days 11--14, producing 96 non-overlapping evaluation windows per function. Days 1--10 serve as historical training and profiling data, while days 11--14 constitute the held-out test period. In addition, weekend days 13--14 are analyzed separately to assess whether model rankings established on weekdays (days 11--12) persist under temporal distribution shifts. For context input, seasonal Holt--Winters, Chronos, and the LSTM observe a 24-hour historical window (1{,}440 minutes), whereas recency heuristics (last-value and trailing percentiles) condition strictly on immediate observations.
 
@@ -156,7 +157,7 @@ Table~\ref{tab:policy} investigates whether specialized per-archetype forecaster
 We assess the robustness of our nominal 10-invocation container capacity via two sensitivity checks. First, given a sample median execution duration of 326~ms, a sequential container could theoretically execute $\sim$184 invocations per minute. Sizing capacity dynamically to each function's average duration (floored at 1) yields medians of 32.5 short and 38.0 extra for Seasonal Naive, 5.0 and 246.0 for Trailing P95, 29.0 and 34.5 for ETS, 69.0 and 0.0 for Chronos, and 88.5 and 0.0 for LSTM---strictly preserving relative model rankings. Second, reweighting functions by true fleet prevalence (where sparse workloads represent $\sim$80\% of traces) yields medians of 17 short and 17 extra for Seasonal Naive, 15 and 129 for Trailing P95, 16 and 12 for ETS, and 24 and 0 for Chronos. Hence, our conclusions remain robust under duration-scaled capacity and fleet-proportional weighting.
 
 \subsection{Limits}
-Several limitations contextualize these findings. First, our evaluation uses trace-driven simulation across 80 sampled Azure functions rather than live production telemetry; shortfall ($S$) and container instantiations serve as capacity proxies rather than kernel-level measurements. Second, containers are modeled per function, whereas commercial platforms often aggregate concurrency across multi-function applications. Third, static 60-minute forecast horizons favor persistence and seasonal baselines over reactive adaptations; real systems could benefit from sliding rolling re-forecasts. Fourth, we benchmarked a fixed 10-minute keep-alive rather than adaptive histogram policies \cite{shahrad2020serverless}. Finally, deep models were evaluated under standard configurations (a shared LSTM and zero-shot Chronos-Bolt) without extensive hyperparameter tuning, capturing out-of-the-box operational efficacy.
+Several limitations contextualize these findings. First, evaluation relies on trace-driven simulation across 80 Azure functions rather than live telemetry; shortfall ($S$) and instantiations serve as capacity proxies rather than kernel measurements. Second, containers are modeled per function rather than across multi-function applications. Third, static 60-minute forecast horizons favor persistence baselines over continuous sliding re-forecasts. Fourth, we benchmarked a fixed 10-minute keep-alive rather than adaptive histogram policies \cite{shahrad2020serverless}. Finally, deep models were evaluated out-of-the-box (shared LSTM and zero-shot Chronos-Bolt) without extensive hyperparameter tuning.
 
 \begin{table}[t]
 \caption{Median sMAPE, short container-minutes, and extra container-minutes on days 11--14.}
