@@ -49,13 +49,13 @@
 % Funding footnote, if any. Delete it when there is no sponsor.
 % \thanks{Identify the funding agency here.}
 
-\author{\IEEEauthorblockN{Mojtaba Jafari}
+\author{\IEEEauthorblockN{1\textsuperscript{st} Mojtaba Jafari}
 \IEEEauthorblockA{\textit{Department of Computer Engineering} \\
 \textit{Amirkabir University of Technology}\\
 Tehran, Iran \\
 mojtaba.jafari@aut.ac.ir}
 \and
-\IEEEauthorblockN{Amir Kalbasi}
+\IEEEauthorblockN{2\textsuperscript{nd} Amir Kalbasi}
 \IEEEauthorblockA{\textit{Department of Computer Engineering} \\
 \textit{Amirkabir University of Technology}\\
 Tehran, Iran \\
@@ -65,7 +65,7 @@ kalbasi@aut.ac.ir}
 \maketitle
 
 \begin{abstract}
-Proactive capacity provisioning mitigates serverless cold starts by pre-warming containers, yet practical autoscaling is constrained by the memory cost of idle instances. Evaluating forecasters under an operational capacity model reveals that conventional statistical error metrics obscure essential provisioning trade-offs. Because container instantiation follows a discrete step function, continuous forecasters induce severe idle memory inflation; enforcing an operational half-invocation cutoff resolves this artifact, collapsing median idle capacity from thousands of container-minutes down to $\approx 100$ (0.5 for LSTM, 1.5 for Chronos, and 112.5 for ETS) while uncovering true capacity shortfalls previously masked by continuous non-zero predictions. Benchmarking seven core forecasters spanning recency heuristics, classical smoothing, and deep/foundation models (alongside reactive baselines) across 80 Azure Functions workloads shows that lightweight recency heuristics (Previous Hour, Seasonal Naive, and ETS) achieve the lowest point-forecast errors, rivaling or outperforming deep LSTMs and foundation models (Chronos-Bolt). Mitigating capacity shortfalls (an operational proxy for cold starts) is governed by headroom rather than model complexity: tracking upper arrival quantiles (Trailing P95 or Chronos P90) slashes median shortfall from 75.0 to 18.5 container-minutes. Finally, archetype-specific tuning over brief windows fails to beat uniform policies across temporal shifts, while reactive keep-alive baselines underscore the latency penalty of hourly forecasting.
+Proactive capacity provisioning mitigates serverless cold starts by pre-warming containers, yet practical autoscaling is constrained by the memory cost of idle instances. Evaluating forecasters under an operational capacity model reveals that conventional statistical error metrics obscure essential provisioning trade-offs. Because container instantiation follows a discrete step function, continuous forecasters induce severe idle memory inflation; enforcing an operational half-invocation cutoff resolves this artifact, collapsing median idle capacity from thousands of container-minutes down to approximately 100 (0.5 for LSTM, 1.5 for Chronos, and 112.5 for ETS) while uncovering true capacity shortfalls previously masked by continuous non-zero predictions. Benchmarking seven core forecasters spanning recency heuristics, classical smoothing, and deep/foundation models (alongside reactive baselines) across 80 Azure Functions workloads shows that lightweight recency heuristics (Previous Hour, Seasonal Naive, and ETS) achieve the lowest point-forecast errors, rivaling or outperforming deep LSTMs and foundation models (Chronos-Bolt). Mitigating capacity shortfalls (an operational proxy for cold starts) is governed by headroom rather than model complexity: tracking upper arrival quantiles (Trailing P95 or Chronos P90) slashes median shortfall from 75.0 to 18.5 container-minutes. Finally, archetype-specific tuning over brief windows fails to beat uniform policies across temporal shifts, while reactive keep-alive baselines underscore the latency penalty of hourly forecasting.
 \end{abstract}
 
 \begin{IEEEkeywords}
