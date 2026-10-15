@@ -28,3 +28,7 @@ venv/
 # The 80-function subset (functions.csv, selected_series.npz, subset_meta.json) stays tracked.
 data/raw/
 data/function_stats.csv
+
+
+# template
+IKT_Template_(English)_.doc
