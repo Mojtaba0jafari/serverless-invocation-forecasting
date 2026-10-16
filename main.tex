@@ -27,6 +27,9 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{url}
+\makeatletter
+\newcommand{\inputtable}[1]{\@@input #1 }
+\makeatother
 
 % The stock IEEEtran conference class leaves the running header empty.
 % IKT's Word template adds this line to the first page only, centered,
@@ -143,7 +146,7 @@ where minutes with zero actual and predicted demand contribute zero. Because a f
 Initial unthresholded scoring revealed severe idle capacity inflation: ETS, LSTM, and Chronos incurred median extra capacities of 2{,}101.5, 3{,}640.5, and 3{,}281.0 container-minutes. Because container allocation rounds up ($\lceil \hat{y}_t / 10 \rceil$), infinitesimal predictions ($<0.5$, present on 88\% of idle minutes in Chronos and 50\% in ETS) acted as accidental 24/7 keep-alives. Enforcing a half-invocation cutoff ($\hat{y}_t < 0.5 \implies 0$) resolves this artifact, collapsing idle medians to 112.5, 0.5, and 1.5 container-minutes while exposing genuine capacity shortfalls (shifting medians to 52.5, 303.5, and 253.5). Sweeping $\tau \in [0.10, 1.00]$ reveals a sharp elbow: over 98\% of idle savings occur by $\tau = 0.25$ (dropping Chronos idle capacity to 3.5), and $\tau = 0.50$ robustly balances idle footprint and shortfall across models. All subsequent analyses enforce this 0.5 cutoff.
 
 \subsection{Error}
-Table~\ref{tab:byclass} summarizes point-forecast accuracy across test days 11--14. Simple heuristics attain the lowest fleet median sMAPE: Previous Hour copy achieves 4.7\%, followed by Seasonal Naive (7.1\%) and ETS (8.2\%). The paired difference between ETS and Seasonal Naive is negligible (0.0 points, 95\% CI: $[-0.0, 0.7]$). Deep and foundation architectures incur higher aggregate error: Chronos-Bolt yields 13.5\%, LSTM 17.0\%, Last Value 19.2\%, and Trailing P95 24.7\%. Bootstrap intervals (2.7\%--15.3\% for Seasonal Naive) confirm that differences among the top three fall within estimation noise. Archetype splits highlight specialized competencies: ETS leads on daily workloads (2.1\% vs.\ 3.9\% for Seasonal Naive); Chronos excels on irregular other functions (7.8\% vs.\ 12.9\%); and Chronos (34.8\%) and LSTM (34.6\%) outperform Seasonal Naive (41.0\%) on bursty traces. On sparse functions, Chronos and LSTM tie at 0.7\% by predicting near zero. Seasonal Naive's autocorrelation gate yields negligible fleet benefit: copying yesterday produces 9.6\% sMAPE versus 4.7\% for the previous hour, confirming that local recency dominates diurnal periodicity at minute granularity. Fig.~\ref{fig:examples} illustrates representative daily and sparse forecasts.
+Table~\ref{tab:byclass} summarizes point-forecast accuracy across test days 11--14. Simple heuristics attain the lowest fleet median sMAPE: Previous Hour copy achieves 4.7\%, followed by Seasonal Naive (7.1\%) and ETS (8.2\%). The paired difference between ETS and Seasonal Naive is negligible (0.0 points, 95\% CI: $[-0.0, 0.7]$). Deep and foundation architectures incur higher aggregate error: Chronos-Bolt yields 13.5\%, LSTM 17.0\%, Last Value 19.2\%, and Trailing P95 24.7\%. Bootstrap intervals (2.7\%--15.3\% for Seasonal Naive) confirm that differences among the top three fall within estimation noise. Archetype splits highlight specialized competencies: ETS leads on daily workloads (2.1\% vs.\ 3.9\% for Seasonal Naive); Chronos excels on irregular other functions (7.8\% vs.\ 12.9\%); and Chronos (34.8\%) and LSTM (34.6\%) outperform Seasonal Naive (41.0\%) on bursty traces. On sparse functions, Chronos and LSTM tie at 0.7\% by predicting near zero. Seasonal Naive's autocorrelation gate yields negligible fleet benefit: copying yesterday produces 9.6\% sMAPE versus 4.7\% for the previous hour, confirming that local recency dominates diurnal periodicity at minute granularity. Fig.~\ref{fig:example_daily} and Fig.~\ref{fig:example_sparse} illustrate representative daily and sparse forecasts, respectively.
 
 \subsection{Shortfall and idle capacity}
 As shown in Table~\ref{tab:all}, every model incurs shortfall across most functions (66\% for Trailing P95 to 90\% for Previous Hour). Seasonal Naive achieves a balanced operating point, with median shortfall of 75.0 container-minutes (95\% CI: $[29, 169]$) and 80.5 extra container-minutes. In contrast, conservative point forecasters---Chronos median (253.5 short, 1.5 extra) and LSTM (303.5 short, 0.5 extra)---minimize idle memory at the cost of high shortfall. Conversely, Trailing P95 trades idle capacity for latency protection, cutting median shortfall to 18.5 container-minutes (paired difference $-35.5$, CI: $[-108.5, -15.0]$) while inflating extra capacity to 729.0 ($+426.5$, CI: $[214, 1{,}228]$), scaling memory from 15.3k to 135.4k MB-minutes but halving new containers from 25.5 to 12.5. Chronos at its 90th percentile achieves virtually the same trade-off (18.5 short, 754.5 extra, 8.5 new containers), while ETS occupies an intermediate point (52.5 short, 112.5 extra).
@@ -160,7 +163,7 @@ We assess the robustness of our nominal 10-invocation container capacity via two
 Several limitations contextualize these findings. First, evaluation relies on trace-driven simulation across 80 Azure functions rather than live telemetry; shortfall ($S$) and instantiations serve as capacity proxies rather than kernel measurements. Second, containers are modeled per function rather than across multi-function applications. Third, static 60-minute forecast horizons favor persistence baselines over continuous sliding re-forecasts. Fourth, we benchmarked a fixed 10-minute keep-alive rather than adaptive histogram policies \cite{shahrad2020serverless}. Finally, deep models were evaluated out-of-the-box (shared LSTM and zero-shot Chronos-Bolt) without extensive hyperparameter tuning.
 
 \begin{table}[t]
-\caption{Median sMAPE, short container-minutes, and extra container-minutes on days 11--14.}
+\caption{Median {\normalfont s}MAPE, short container-minutes, and extra container-minutes on days 11--14.}
 \label{tab:byclass}
 \centering
 \scriptsize
@@ -169,15 +172,22 @@ Several limitations contextualize these findings. First, evaluation relies on tr
 \hline
 \textbf{Model} & \textbf{Metric} & \textbf{Sparse} & \textbf{Daily} & \textbf{Bursty} & \textbf{Other} & \textbf{All} \\
 \hline
-\input{tables/tab_byclass.tex}
+\inputtable{tables/tab_byclass.tex}
 \end{tabular}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/forecast_examples}
-\caption{Day 11 for one daily and one sparse function, in 10-minute means. The other forecasters follow the same shape or stay near zero.}
-\label{fig:examples}
+\includegraphics[width=\columnwidth]{figures/forecast_daily}
+\caption{Day 11 for one representative daily function, in 10-minute means. Models capture diurnal cycles with varying responsiveness.}
+\label{fig:example_daily}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/forecast_sparse}
+\caption{Day 11 for one representative sparse function, in 10-minute means. Deep models correctly remain flat near zero while upper quantiles incur temporary headroom spikes.}
+\label{fig:example_sparse}
 \end{figure}
 
 \begin{table}[t]
@@ -190,7 +200,7 @@ Several limitations contextualize these findings. First, evaluation relies on tr
 \hline
 \textbf{Model} & \textbf{sMAPE} & \textbf{Short} & \textbf{Extra} & \textbf{New} & \textbf{MB} & \textbf{Short\%} \\
 \hline
-\input{tables/tab_all.tex}
+\inputtable{tables/tab_all.tex}
 \end{tabular}
 \end{table}
 
@@ -213,7 +223,7 @@ Several limitations contextualize these findings. First, evaluation relies on tr
 \hline
 \textbf{Policy} & \textbf{sMAPE} & \textbf{Short} & \textbf{Extra} & \textbf{sMAPE} & \textbf{Short} & \textbf{Extra} \\
 \hline
-\input{tables/tab_policy.tex}
+\inputtable{tables/tab_policy.tex}
 \end{tabular}
 \end{table}
 

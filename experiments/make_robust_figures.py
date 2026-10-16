@@ -36,9 +36,45 @@ def plot_examples() -> None:
     ]
     chosen = {"daily": 30, "sparse": 2}
     plt.rcParams.update({"font.family": "serif", "font.size": 8, "axes.labelsize": 8, "axes.titlesize": 8,
-                         "legend.fontsize": 6, "axes.spines.top": False, "axes.spines.right": False})
-    fig, axes = plt.subplots(2, 1, figsize=(3.45, 4.3), sharex=True)
+                         "legend.fontsize": 6.5, "axes.spines.top": False, "axes.spines.right": False})
     minutes = np.arange(0, 1440, 10)
+
+    # 1. Daily function figure
+    fig_daily, ax_daily = plt.subplots(figsize=(3.45, 2.15))
+    row_d = chosen["daily"]
+    ax_daily.plot(minutes, stitch(y[row_d], 0), color="black", lw=0.8, label="Actual")
+    for key, name, color, style in models:
+        ax_daily.plot(minutes, stitch(fix(f[key])[row_d], 0), color=color, lw=0.8, ls=style, label=name)
+    ax_daily.set_xlim(0, 1439)
+    ax_daily.set_ylim(0, 265)
+    ax_daily.set_xlabel("Minute of the day")
+    ax_daily.set_ylabel("Invocations (per min)")
+    ax_daily.set_title("Daily function, day 11")
+    ax_daily.legend(frameon=False, loc="upper left", ncol=2)
+    fig_daily.tight_layout()
+    fig_daily.savefig(FIGURES / "forecast_daily.pdf")
+    fig_daily.savefig(FIGURES / "forecast_daily.png", dpi=160)
+    plt.close(fig_daily)
+
+    # 2. Sparse function figure (legend on the right static/flat region, 1 col, no overlap)
+    fig_sparse, ax_sparse = plt.subplots(figsize=(3.45, 2.15))
+    row_s = chosen["sparse"]
+    ax_sparse.plot(minutes, stitch(y[row_s], 0), color="black", lw=0.8, label="Actual")
+    for key, name, color, style in models:
+        ax_sparse.plot(minutes, stitch(fix(f[key])[row_s], 0), color=color, lw=0.8, ls=style, label=name)
+    ax_sparse.set_xlim(0, 1439)
+    ax_sparse.set_ylim(0, 3.1)
+    ax_sparse.set_xlabel("Minute of the day")
+    ax_sparse.set_ylabel("Invocations (per min)")
+    ax_sparse.set_title("Sparse function, day 11")
+    ax_sparse.legend(frameon=False, loc="upper right", ncol=1)
+    fig_sparse.tight_layout()
+    fig_sparse.savefig(FIGURES / "forecast_sparse.pdf")
+    fig_sparse.savefig(FIGURES / "forecast_sparse.png", dpi=160)
+    plt.close(fig_sparse)
+
+    # Also keep legacy combined figure
+    fig, axes = plt.subplots(2, 1, figsize=(3.45, 4.3), sharex=True)
     for axis, (label, row) in zip(axes, chosen.items()):
         assert meta["class"].iloc[row] == label
         axis.plot(minutes, stitch(y[row], 0), color="black", lw=0.8, label="Actual")
@@ -50,11 +86,12 @@ def plot_examples() -> None:
         axis.set_title(f"{label.capitalize()} function, day 11")
     axes[1].set_xlabel("Minute of the day")
     handles, labels = axes[0].get_legend_handles_labels()
-    axes[1].legend(handles, labels, frameon=False, loc="upper right", ncol=2)
+    axes[1].legend(handles, labels, frameon=False, loc="upper right", ncol=1)
     fig.tight_layout()
     fig.savefig(FIGURES / "forecast_examples.pdf")
     fig.savefig(FIGURES / "forecast_examples.png", dpi=160)
     plt.close(fig)
+
 
 
 def plot_frontier() -> None:
